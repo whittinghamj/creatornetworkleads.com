@@ -154,11 +154,17 @@ require __DIR__ . '/includes/header.php';
                     <a href="/admin/user-form.php" class="btn btn-sm btn-danger">
                         <i class="bi bi-person-plus me-1"></i>Add User
                     </a>
+                    <a href="/admin/packages.php" class="btn btn-sm btn-outline-dark">
+                        <i class="bi bi-box-seam me-1"></i>Packages
+                    </a>
                     <a href="/admin/leads.php?filter=unassigned" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-inbox me-1"></i>Unassigned Leads
                     </a>
                     <a href="/admin/leads.php" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-collection me-1"></i>All Leads
+                    </a>
+                    <a href="/admin/daily-assignments.php" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-calendar-check me-1"></i>Run Daily Assignments
                     </a>
                 </div>
             </div>

@@ -57,6 +57,12 @@ if (!isset($activeNav))  { $activeNav  = ''; }
             </a>
 
             <div class="nav-section mt-2">Settings</div>
+            <a href="/admin/packages.php" class="nav-link <?= $activeNav === 'packages' ? 'active' : '' ?>">
+                <i class="bi bi-box-seam-fill"></i> Packages
+            </a>
+            <a href="/admin/daily-assignments.php" class="nav-link <?= $activeNav === 'daily-assignments' ? 'active' : '' ?>">
+                <i class="bi bi-calendar-check-fill"></i> Daily Assignments
+            </a>
             <a href="/dashboard.php" class="nav-link">
                 <i class="bi bi-house-fill"></i> Customer View
             </a>

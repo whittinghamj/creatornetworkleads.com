@@ -8,6 +8,7 @@ if (!defined('APP_NAME')) {
     define('APP_TAGLINE', 'Premium TikTok Creator Leads for LIVE Backstage');
     define('APP_URL',     'https://creatornetworkleads.com');
     define('PER_PAGE',    25);
+    define('CRON_ASSIGN_KEY', '');
 }
 
 // Timezone

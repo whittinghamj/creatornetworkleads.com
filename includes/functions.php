@@ -217,3 +217,196 @@ function getInt(string $key, int $default = 0): int
 {
     return (int)($_GET[$key] ?? $default);
 }
+
+// ---------------------------------------------------------------------------
+// Packages + Daily Lead Assignment
+// ---------------------------------------------------------------------------
+
+function ensurePackagesSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS packages (
+            id                int(11) unsigned NOT NULL AUTO_INCREMENT,
+            created_at        datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at        datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            name              varchar(100) NOT NULL,
+            description       text DEFAULT NULL,
+            leads_per_day     int(11) NOT NULL DEFAULT 0,
+            price_per_month   decimal(10,2) NOT NULL DEFAULT 0.00,
+            PRIMARY KEY (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $colStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+    $colStmt->execute(['users', 'package_id']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE users ADD COLUMN package_id int(11) unsigned DEFAULT NULL AFTER notes');
+    }
+
+    $idxStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+    );
+    $idxStmt->execute(['users', 'idx_users_package_id']);
+    if ((int)$idxStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE users ADD INDEX idx_users_package_id (package_id)');
+    }
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS customer_daily_lead_assignments (
+            id              int(11) unsigned NOT NULL AUTO_INCREMENT,
+            user_id         int(11) unsigned NOT NULL,
+            assign_date     date NOT NULL,
+            assigned_count  int(11) NOT NULL DEFAULT 0,
+            created_at      datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at      datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_user_day (user_id, assign_date),
+            KEY idx_assign_date (assign_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $done = true;
+}
+
+function getPackages(PDO $db): array
+{
+    ensurePackagesSchema($db);
+    return $db->query('SELECT * FROM packages ORDER BY price_per_month ASC, name ASC')->fetchAll();
+}
+
+function packageNameById(array $packages, ?int $packageId): string
+{
+    if (!$packageId) {
+        return 'None';
+    }
+
+    foreach ($packages as $package) {
+        if ((int)$package['id'] === (int)$packageId) {
+            return (string)$package['name'];
+        }
+    }
+
+    return 'Unknown';
+}
+
+function assignAvailableLeadsForCustomer(PDO $db, int $customerId): array
+{
+    ensurePackagesSchema($db);
+
+    $today = date('Y-m-d');
+    $userStmt = $db->prepare(
+        'SELECT u.id, u.name, u.role, u.status, u.package_id, p.name AS package_name, p.leads_per_day
+         FROM users u
+         LEFT JOIN packages p ON p.id = u.package_id
+         WHERE u.id = ?
+         LIMIT 1'
+    );
+    $userStmt->execute([$customerId]);
+    $user = $userStmt->fetch();
+
+    if (!$user || $user['role'] !== 'customer' || $user['status'] !== 'active') {
+        return ['assigned' => 0, 'remaining' => 0, 'reason' => 'User is not an active customer.'];
+    }
+
+    $dailyLimit = (int)($user['leads_per_day'] ?? 0);
+    if ($dailyLimit <= 0) {
+        return ['assigned' => 0, 'remaining' => 0, 'reason' => 'No package or leads/day is zero.'];
+    }
+
+    $db->beginTransaction();
+    try {
+        $todayStmt = $db->prepare(
+            'SELECT assigned_count FROM customer_daily_lead_assignments WHERE user_id = ? AND assign_date = ? FOR UPDATE'
+        );
+        $todayStmt->execute([$customerId, $today]);
+        $alreadyAssigned = (int)($todayStmt->fetchColumn() ?: 0);
+
+        $remaining = max(0, $dailyLimit - $alreadyAssigned);
+        if ($remaining === 0) {
+            $db->commit();
+            return ['assigned' => 0, 'remaining' => 0, 'reason' => 'Daily limit already reached.'];
+        }
+
+        $leadStmt = $db->prepare(
+            "SELECT id
+             FROM creators
+             WHERE assigned_customer IS NULL
+               AND backstage_status = 'Available'
+             ORDER BY id ASC
+             LIMIT ?"
+        );
+        $leadStmt->bindValue(1, $remaining, PDO::PARAM_INT);
+        $leadStmt->execute();
+        $leadIds = array_map('intval', array_column($leadStmt->fetchAll(), 'id'));
+
+        if (empty($leadIds)) {
+            $db->commit();
+            return ['assigned' => 0, 'remaining' => $remaining, 'reason' => 'No available unassigned leads.'];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+        $updateSql = "UPDATE creators SET assigned_customer = ? WHERE id IN ($placeholders)";
+        $updateStmt = $db->prepare($updateSql);
+        $bind = array_merge([$customerId], $leadIds);
+        $updateStmt->execute($bind);
+        $assignedNow = (int)$updateStmt->rowCount();
+
+        $logStmt = $db->prepare(
+            'INSERT INTO customer_daily_lead_assignments (user_id, assign_date, assigned_count)
+             VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE assigned_count = assigned_count + VALUES(assigned_count)'
+        );
+        $logStmt->execute([$customerId, $today, $assignedNow]);
+
+        $db->commit();
+
+        return [
+            'assigned' => $assignedNow,
+            'remaining' => max(0, $remaining - $assignedNow),
+            'reason' => $assignedNow > 0 ? 'Assigned successfully.' : 'No leads assigned.',
+        ];
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        return ['assigned' => 0, 'remaining' => 0, 'reason' => 'Assignment failed: ' . $e->getMessage()];
+    }
+}
+
+function assignAvailableLeadsForAllCustomers(PDO $db): array
+{
+    ensurePackagesSchema($db);
+
+    $customers = $db->query(
+        "SELECT id, name
+         FROM users
+         WHERE role = 'customer'
+           AND status = 'active'
+           AND package_id IS NOT NULL
+         ORDER BY id ASC"
+    )->fetchAll();
+
+    $results = [];
+    $totalAssigned = 0;
+
+    foreach ($customers as $customer) {
+        $result = assignAvailableLeadsForCustomer($db, (int)$customer['id']);
+        $result['user_id'] = (int)$customer['id'];
+        $result['name'] = (string)$customer['name'];
+        $totalAssigned += (int)$result['assigned'];
+        $results[] = $result;
+    }
+
+    return [
+        'total_assigned' => $totalAssigned,
+        'customer_count' => count($customers),
+        'results' => $results,
+    ];
+}

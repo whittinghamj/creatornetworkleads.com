@@ -7,11 +7,49 @@ require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 $db      = getDB();
+ensurePackagesSchema($db);
 $perPage = 20;
 $page    = getInt('page', 1);
 $search  = getStr('search');
 $role    = getStr('role');
 $status  = getStr('status');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'set_package') {
+    verifyCsrf();
+
+    $targetUserId = (int)postStr('user_id');
+    $packageId    = (int)postStr('package_id');
+
+    $usrStmt = $db->prepare('SELECT id, role, name FROM users WHERE id = ? LIMIT 1');
+    $usrStmt->execute([$targetUserId]);
+    $targetUser = $usrStmt->fetch();
+
+    if (!$targetUser) {
+        flash('User not found.', 'danger');
+    } elseif ($targetUser['role'] !== 'customer') {
+        flash('Packages can only be assigned to customer accounts.', 'danger');
+    } else {
+        if ($packageId > 0) {
+            $pkgStmt = $db->prepare('SELECT id, name FROM packages WHERE id = ? LIMIT 1');
+            $pkgStmt->execute([$packageId]);
+            $package = $pkgStmt->fetch();
+            if (!$package) {
+                flash('Selected package does not exist.', 'danger');
+            } else {
+                $db->prepare('UPDATE users SET package_id = ? WHERE id = ?')->execute([$packageId, $targetUserId]);
+                flash('Package updated for ' . $targetUser['name'] . '.', 'success');
+            }
+        } else {
+            $db->prepare('UPDATE users SET package_id = NULL WHERE id = ?')->execute([$targetUserId]);
+            flash('Package removed for ' . $targetUser['name'] . '.', 'success');
+        }
+    }
+
+    header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/admin/users.php'));
+    exit;
+}
+
+$packages = getPackages($db);
 
 // Build query
 $where  = ['1=1'];
@@ -34,8 +72,6 @@ if ($status !== '') {
 
 $whereStr = 'WHERE ' . implode(' AND ', $where);
 
-$total    = (int)$db->prepare("SELECT COUNT(*) FROM users $whereStr")->execute($params) ? (int)$db->prepare("SELECT COUNT(*) FROM users $whereStr")->execute($params) : 0;
-// Re-execute for count
 $cntStmt = $db->prepare("SELECT COUNT(*) FROM users $whereStr");
 $cntStmt->execute($params);
 $total = (int)$cntStmt->fetchColumn();
@@ -115,6 +151,7 @@ require __DIR__ . '/includes/header.php';
                     <th>Name</th>
                     <th>Email</th>
                     <th>Company</th>
+                    <th>Package</th>
                     <th>Role</th>
                     <th>Status</th>
                     <th>Leads</th>
@@ -143,6 +180,28 @@ require __DIR__ . '/includes/header.php';
                     </td>
                     <td class="small text-muted"><?= e($u['email']) ?></td>
                     <td class="small"><?= $u['company'] ? e($u['company']) : '<span class="text-muted">—</span>' ?></td>
+                    <td>
+                        <?php if ($u['role'] === 'customer'): ?>
+                            <form method="POST" action="/admin/users.php?search=<?= urlencode($search) ?>&role=<?= urlencode($role) ?>&status=<?= urlencode($status) ?>&page=<?= (int)$page ?>" class="d-flex gap-1 align-items-center">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="set_package">
+                                <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                                <select name="package_id" class="form-select form-select-sm" style="min-width:160px">
+                                    <option value="0">No Package</option>
+                                    <?php foreach ($packages as $package): ?>
+                                        <option value="<?= (int)$package['id'] ?>" <?= (int)($u['package_id'] ?? 0) === (int)$package['id'] ? 'selected' : '' ?>>
+                                            <?= e($package['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2" title="Save package">
+                                    <i class="bi bi-check2"></i>
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <span class="text-muted small">—</span>
+                        <?php endif; ?>
+                    </td>
                     <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'dark' : 'secondary' ?>"><?= ucfirst(e($u['role'])) ?></span></td>
                     <td><?= statusBadge($u['status']) ?></td>
                     <td>
@@ -175,7 +234,7 @@ require __DIR__ . '/includes/header.php';
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($users)): ?>
-                <tr><td colspan="10" class="text-center py-4 text-muted">No users found.</td></tr>
+                <tr><td colspan="11" class="text-center py-4 text-muted">No users found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

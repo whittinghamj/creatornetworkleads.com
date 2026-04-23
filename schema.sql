@@ -21,6 +21,36 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Packages table (customer subscription plans)
+CREATE TABLE IF NOT EXISTS `packages` (
+  `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`       datetime         DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       datetime         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `name`             varchar(100)     NOT NULL,
+  `description`      text             DEFAULT NULL,
+  `leads_per_day`    int(11)          NOT NULL DEFAULT 0,
+  `price_per_month`  decimal(10,2)    NOT NULL DEFAULT 0.00,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Add package relation on users (run once)
+ALTER TABLE `users`
+  ADD COLUMN `package_id` int(11) unsigned DEFAULT NULL,
+  ADD KEY `idx_users_package_id` (`package_id`);
+
+-- Tracks how many leads were auto-assigned per customer each day
+CREATE TABLE IF NOT EXISTS `customer_daily_lead_assignments` (
+  `id`             int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id`        int(11) unsigned NOT NULL,
+  `assign_date`    date             NOT NULL,
+  `assigned_count` int(11)          NOT NULL DEFAULT 0,
+  `created_at`     datetime         DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     datetime         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_day` (`user_id`, `assign_date`),
+  KEY `idx_assign_date` (`assign_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- ============================================================
 -- Initial admin account
 -- Run setup.php to create the first admin interactively, OR

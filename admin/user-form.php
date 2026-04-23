@@ -7,8 +7,11 @@ require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 $db    = getDB();
+ensurePackagesSchema($db);
 $id    = getInt('id');
 $isNew = ($id === 0);
+
+$packages = getPackages($db);
 
 // Load existing user
 $user = [
@@ -20,6 +23,7 @@ $user = [
     'role'    => 'customer',
     'status'  => 'active',
     'notes'   => '',
+    'package_id' => null,
 ];
 
 if (!$isNew) {
@@ -39,6 +43,17 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
 
+    $action = postStr('action', 'save_user');
+    if ($action === 'assign_package_leads' && !$isNew) {
+        $assignResult = assignAvailableLeadsForCustomer($db, $id);
+        flash(
+            'Assigned ' . (int)$assignResult['assigned'] . ' lead(s). ' . $assignResult['reason'],
+            'info'
+        );
+        header('Location: /admin/user-form.php?id=' . $id);
+        exit;
+    }
+
     $user['name']    = postStr('name');
     $user['email']   = strtolower(postStr('email'));
     $user['company'] = postStr('company');
@@ -46,8 +61,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user['role']    = in_array(postStr('role'), ['customer','admin']) ? postStr('role') : 'customer';
     $user['status']  = in_array(postStr('status'), ['active','inactive','pending']) ? postStr('status') : 'active';
     $user['notes']   = postStr('notes');
+    $user['package_id'] = (int)postStr('package_id');
     $password        = postStr('password');
     $passConfirm     = postStr('password_confirm');
+
+    if ($user['role'] !== 'customer') {
+        $user['package_id'] = 0;
+    }
+
+    if ($user['package_id'] > 0) {
+        $pkgStmt = $db->prepare('SELECT id FROM packages WHERE id = ? LIMIT 1');
+        $pkgStmt->execute([$user['package_id']]);
+        if (!$pkgStmt->fetch()) {
+            $errors[] = 'Selected package does not exist.';
+        }
+    }
 
     if ($user['name'] === '') {
         $errors[] = 'Full name is required.';
@@ -77,8 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         if ($isNew) {
             $stmt = $db->prepare(
-                'INSERT INTO users (name, email, password, company, phone, role, status, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO users (name, email, password, company, phone, role, status, notes, package_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $user['name'],
@@ -89,28 +117,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user['role'],
                 $user['status'],
                 $user['notes']   ?: null,
+                $user['package_id'] > 0 ? $user['package_id'] : null,
             ]);
             flash('User ' . $user['name'] . ' created successfully.', 'success');
         } else {
             if ($password !== '') {
                 $stmt = $db->prepare(
-                    'UPDATE users SET name=?, email=?, password=?, company=?, phone=?, role=?, status=?, notes=? WHERE id=?'
+                    'UPDATE users SET name=?, email=?, password=?, company=?, phone=?, role=?, status=?, notes=?, package_id=? WHERE id=?'
                 );
                 $stmt->execute([
                     $user['name'], $user['email'],
                     password_hash($password, PASSWORD_DEFAULT),
                     $user['company'] ?: null, $user['phone'] ?: null,
                     $user['role'], $user['status'], $user['notes'] ?: null,
+                    $user['package_id'] > 0 ? $user['package_id'] : null,
                     $id,
                 ]);
             } else {
                 $stmt = $db->prepare(
-                    'UPDATE users SET name=?, email=?, company=?, phone=?, role=?, status=?, notes=? WHERE id=?'
+                    'UPDATE users SET name=?, email=?, company=?, phone=?, role=?, status=?, notes=?, package_id=? WHERE id=?'
                 );
                 $stmt->execute([
                     $user['name'], $user['email'],
                     $user['company'] ?: null, $user['phone'] ?: null,
                     $user['role'], $user['status'], $user['notes'] ?: null,
+                    $user['package_id'] > 0 ? $user['package_id'] : null,
                     $id,
                 ]);
             }
@@ -150,6 +181,7 @@ require __DIR__ . '/includes/header.php';
             <div class="card-body p-4">
                 <form method="POST" action="/admin/user-form.php<?= $isNew ? '' : '?id=' . $id ?>" novalidate>
                     <?= csrfField() ?>
+                    <input type="hidden" name="action" value="save_user">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
@@ -185,6 +217,18 @@ require __DIR__ . '/includes/header.php';
                                 <option value="inactive" <?= $user['status'] === 'inactive' ? 'selected' : '' ?>>Inactive</option>
                                 <option value="pending"  <?= $user['status'] === 'pending'  ? 'selected' : '' ?>>Pending</option>
                             </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Package</label>
+                            <select name="package_id" class="form-select">
+                                <option value="0">No Package</option>
+                                <?php foreach ($packages as $package): ?>
+                                    <option value="<?= (int)$package['id'] ?>" <?= (int)($user['package_id'] ?? 0) === (int)$package['id'] ? 'selected' : '' ?>>
+                                        <?= e($package['name']) ?> (<?= (int)$package['leads_per_day'] ?>/day)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Used only for customer accounts.</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold">
@@ -230,8 +274,6 @@ require __DIR__ . '/includes/header.php';
             <div class="card-header bg-white border-bottom fw-semibold py-3">Assigned Leads</div>
             <div class="card-body p-3">
                 <?php
-                $assignedCount = (int)$db->prepare('SELECT COUNT(*) FROM creators WHERE assigned_customer = ?')
-                    ->execute([$id]) ? 0 : 0;
                 $acStmt = $db->prepare('SELECT COUNT(*) FROM creators WHERE assigned_customer = ?');
                 $acStmt->execute([$id]);
                 $assignedCount = (int)$acStmt->fetchColumn();
@@ -246,6 +288,15 @@ require __DIR__ . '/includes/header.php';
                 <a href="/admin/leads.php?filter=unassigned" class="btn btn-sm btn-outline-success w-100">
                     <i class="bi bi-plus-circle me-1"></i>Assign More Leads
                 </a>
+                <?php if ($user['role'] === 'customer' && (int)($user['package_id'] ?? 0) > 0): ?>
+                    <form method="POST" action="/admin/user-form.php?id=<?= $id ?>" class="mt-2">
+                        <?= csrfField() ?>
+                        <input type="hidden" name="action" value="assign_package_leads">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-magic me-1"></i>Assign Package Leads Now
+                        </button>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
 
