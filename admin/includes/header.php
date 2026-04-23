@@ -17,6 +17,7 @@ if (!isset($activeNav))  { $activeNav  = ''; }
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/css/style.css">
+    <script>(function(){var t=localStorage.getItem('cnl-theme')||'light';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
 </head>
 <body>
 <div class="admin-wrapper">
@@ -95,6 +96,9 @@ if (!isset($activeNav))  { $activeNav  = ''; }
             <span class="fw-semibold text-dark"><?= e($pageTitle) ?></span>
             <div class="d-flex align-items-center gap-2 ms-auto">
                 <span class="text-muted small d-none d-md-inline"><?= e($_SESSION['user_email'] ?? '') ?></span>
+                <button id="themeToggle" class="btn btn-sm btn-outline-secondary" title="Toggle dark mode">
+                    <i class="bi bi-moon-fill"></i>
+                </button>
                 <a href="/logout.php" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-box-arrow-right me-1"></i>Logout
                 </a>

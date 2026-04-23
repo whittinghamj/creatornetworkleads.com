@@ -33,13 +33,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'update_custo
     if ($leadId <= 0 || !in_array($newStatus, $allowedStatuses, true)) {
         flash('Invalid lead status update.', 'danger');
     } else {
-        $upStmt = $db->prepare(
-            'UPDATE creators
-             SET customer_status = ?
-             WHERE id = ? AND assigned_customer = ?
-             LIMIT 1'
-        );
-        $upStmt->execute([$newStatus, $leadId, $userId]);
+        // When marking accepted, also set backstage_status to 'invited'
+        if ($newStatus === 'accepted') {
+            $upStmt = $db->prepare(
+                'UPDATE creators
+                 SET customer_status = ?, backstage_status = "invited"
+                 WHERE id = ? AND assigned_customer = ?
+                 LIMIT 1'
+            );
+            $upStmt->execute([$newStatus, $leadId, $userId]);
+        } else {
+            $upStmt = $db->prepare(
+                'UPDATE creators
+                 SET customer_status = ?
+                 WHERE id = ? AND assigned_customer = ?
+                 LIMIT 1'
+            );
+            $upStmt->execute([$newStatus, $leadId, $userId]);
+        }
 
         if ($upStmt->rowCount() > 0) {
             flash('Lead status updated.', 'success');
@@ -124,6 +135,7 @@ $pageTitle = 'My Leads';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/css/style.css">
+    <script>(function(){var t=localStorage.getItem('cnl-theme')||'light';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
 </head>
 <body class="bg-light">
 
@@ -145,6 +157,9 @@ $pageTitle = 'My Leads';
             <?php if (isAdmin()): ?>
                 <a href="/admin/" class="btn btn-outline-warning btn-sm"><i class="bi bi-shield-lock me-1"></i>Admin</a>
             <?php endif; ?>
+            <button id="themeToggle" class="btn btn-outline-light btn-sm" title="Toggle dark mode">
+                <i class="bi bi-moon-fill"></i>
+            </button>
             <a href="/logout.php" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
         </div>
     </div>

@@ -75,4 +75,21 @@ $(function () {
         $.each(rows, function (i, row) { tbody.append(row); });
     });
 
+    /* ── Dark mode toggle ───────────────────────────────────── */
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('cnl-theme', theme);
+        var isDark = theme === 'dark';
+        $('#themeToggle i').attr('class', isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill');
+        $('#themeToggle').attr('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+
+    // Apply correct icon on load
+    applyTheme(localStorage.getItem('cnl-theme') || 'light');
+
+    $('#themeToggle').on('click', function () {
+        var current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
 });
