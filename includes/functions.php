@@ -122,6 +122,7 @@ function statusBadge(string $status): string
         'pending'  => 'warning',
         'new'      => 'secondary',
         'unknown'  => 'secondary',
+        'contacted'=> 'primary',
         'invited'  => 'info',
         'accepted' => 'success',
         'declined' => 'danger',

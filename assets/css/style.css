@@ -375,3 +375,55 @@ html { scroll-behavior: smooth; }
     box-shadow: 0 20px 60px rgba(0,0,0,.4);
 }
 [data-bs-theme="dark"] .auth-logo span { color: #e6edf3; }
+
+/* Stat icon circles – override inline pastel backgrounds */
+[data-bs-theme="dark"] .dash-stat-icon,
+[data-bs-theme="dark"] .admin-stat-icon {
+    background: rgba(255,255,255,.1) !important;
+}
+
+/* bg-white utility */
+[data-bs-theme="dark"] .bg-white {
+    background-color: #161b22 !important;
+    color: #e6edf3 !important;
+}
+
+/* Card headers */
+[data-bs-theme="dark"] .card-header {
+    background-color: #0d1117;
+    border-bottom-color: #30363d;
+    color: #e6edf3;
+}
+
+/* bg-light utility (used on landing page sections) */
+[data-bs-theme="dark"] .bg-light {
+    background-color: #0d1117 !important;
+    color: #e6edf3;
+}
+
+/* Feature cards on sales/landing page */
+[data-bs-theme="dark"] .feature-card {
+    background: #161b22;
+    border-color: #30363d;
+    color: #e6edf3;
+}
+[data-bs-theme="dark"] .feature-icon {
+    background: rgba(255,0,80,.15);
+}
+
+/* Lead cards on customer dashboard */
+[data-bs-theme="dark"] .lead-card {
+    background: #161b22;
+    border-color: #30363d;
+}
+[data-bs-theme="dark"] .lead-avatar-wrap .status-dot {
+    border-color: #161b22;
+}
+
+/* Tip / highlight cards with inline light-green bg */
+[data-bs-theme="dark"] .tip-card {
+    background: rgba(5,150,105,.12) !important;
+    border-color: rgba(5,150,105,.3) !important;
+}
+[data-bs-theme="dark"] .tip-card .text-dark { color: #e6edf3 !important; }
+[data-bs-theme="dark"] .tip-card .text-muted { color: #8b949e !important; }

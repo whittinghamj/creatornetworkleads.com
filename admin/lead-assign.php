@@ -184,7 +184,7 @@ require __DIR__ . '/includes/header.php';
         </div>
 
         <!-- Bulk assign tip -->
-        <div class="card border-0 shadow-sm mt-3" style="border-radius:14px;background:#f0fdf4;border-color:#bbf7d0!important">
+        <div class="card border-0 shadow-sm mt-3 tip-card" style="border-radius:14px;background:#f0fdf4;border-color:#bbf7d0!important">
             <div class="card-body p-3">
                 <div class="d-flex align-items-start gap-2">
                     <i class="bi bi-lightbulb-fill text-success mt-1"></i>

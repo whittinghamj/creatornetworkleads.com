@@ -88,6 +88,7 @@ $statsStmt = $db->prepare(
     "SELECT
         COUNT(*) AS total,
         SUM(CASE WHEN c.customer_status = 'new'      THEN 1 ELSE 0 END) AS new_count,
+        SUM(CASE WHEN c.customer_status = 'contacted' THEN 1 ELSE 0 END) AS contacted_count,
         SUM(CASE WHEN c.customer_status = 'invited'  THEN 1 ELSE 0 END) AS invited_count,
         SUM(CASE WHEN c.customer_status = 'accepted' THEN 1 ELSE 0 END) AS accepted_count,
         SUM(CASE WHEN c.customer_status = 'declined' THEN 1 ELSE 0 END) AS declined_count
@@ -98,6 +99,7 @@ $statsStmt->execute($params);
 $quickStats = $statsStmt->fetch() ?: [
     'total' => 0,
     'new_count' => 0,
+    'contacted_count' => 0,
     'invited_count' => 0,
     'accepted_count' => 0,
     'declined_count' => 0,
@@ -106,7 +108,7 @@ $quickStats = $statsStmt->fetch() ?: [
 // Filter options
 $regionRows   = $db->query('SELECT DISTINCT backstage_region FROM creators ORDER BY backstage_region')->fetchAll(PDO::FETCH_COLUMN);
 $statusRows   = $db->query('SELECT DISTINCT backstage_status FROM creators ORDER BY backstage_status')->fetchAll(PDO::FETCH_COLUMN);
-$customerStatusRows = ['new', 'invited', 'accepted', 'declined'];
+$customerStatusRows = ['new', 'contacted', 'invited', 'accepted', 'declined'];
 $invTypes     = getInvitationTypes();
 $customers    = $db->query("SELECT id, name, email FROM users WHERE role='customer' AND status='active' ORDER BY name")->fetchAll();
 
@@ -148,6 +150,12 @@ require __DIR__ . '/includes/header.php';
         <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
             <div class="text-muted small">New</div>
             <div class="fw-bold fs-4 text-secondary"><?= number_format((int)$quickStats['new_count']) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
+            <div class="text-muted small">Contacted</div>
+            <div class="fw-bold fs-4 text-primary"><?= number_format((int)$quickStats['contacted_count']) ?></div>
         </div>
     </div>
     <div class="col-6 col-md-2">
@@ -224,7 +232,7 @@ require __DIR__ . '/includes/header.php';
                     <option value="0">All Customers</option>
                     <?php foreach ($customers as $c): ?>
                         <option value="<?= (int)$c['id'] ?>" <?= $custF === (int)$c['id'] ? 'selected' : '' ?>>
-                            <?= e($c['name']) ?>
+                            <?= e($c['name']) ?> (<?= e($c['email']) ?>)
                         </option>
                     <?php endforeach; ?>
                 </select>

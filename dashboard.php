@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'update_custo
 
     $leadId = (int)postStr('lead_id');
     $newStatus = strtolower(postStr('customer_status'));
-    $allowedStatuses = ['invited', 'accepted', 'declined'];
+    $allowedStatuses = ['contacted', 'invited', 'accepted', 'declined'];
 
     if ($leadId <= 0 || !in_array($newStatus, $allowedStatuses, true)) {
         flash('Invalid lead status update.', 'danger');
@@ -186,6 +186,7 @@ $leads = $stmt->fetchAll();
 $statsStmt = $db->prepare(
     "SELECT
         COUNT(*) AS total,
+        SUM(CASE WHEN customer_status = 'contacted' THEN 1 ELSE 0 END) AS contacted,
         SUM(CASE WHEN customer_status = 'invited'  THEN 1 ELSE 0 END) AS invited,
         SUM(CASE WHEN customer_status = 'accepted' THEN 1 ELSE 0 END) AS accepted,
         SUM(CASE WHEN customer_status = 'declined' THEN 1 ELSE 0 END) AS declined
@@ -282,7 +283,7 @@ $pageTitle = 'My Leads';
 
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-xl">
             <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#fff0f4;color:#ff0050">
                     <i class="bi bi-people-fill fs-4"></i>
@@ -291,7 +292,16 @@ $pageTitle = 'My Leads';
                 <div class="text-muted small">Total Leads</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-xl">
+            <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
+                <div class="dash-stat-icon mx-auto mb-2" style="background:#dbeafe;color:#2563eb">
+                    <i class="bi bi-chat-dots-fill fs-4"></i>
+                </div>
+                <div class="fw-bold fs-3\"><?= number_format((int)$stats['contacted']) ?></div>
+                <div class="text-muted small">Contacted</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl">
             <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#e0f2fe;color:#0284c7">
                     <i class="bi bi-send-fill fs-4"></i>
@@ -300,7 +310,7 @@ $pageTitle = 'My Leads';
                 <div class="text-muted small">Invited</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-xl">
             <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#d1fae5;color:#059669">
                     <i class="bi bi-check2-circle fs-4"></i>
@@ -309,7 +319,7 @@ $pageTitle = 'My Leads';
                 <div class="text-muted small">Accepted</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4 col-xl">
             <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#f3e8ff;color:#7c3aed">
                     <i class="bi bi-x-circle fs-4"></i>
@@ -429,6 +439,7 @@ $pageTitle = 'My Leads';
                                     <?= csrfField() ?>
                                     <input type="hidden" name="action" value="update_customer_status">
                                     <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
+                                    <button type="submit" name="customer_status" value="contacted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'contacted' ? 'btn-primary' : 'btn-outline-primary' ?>">Contacted</button>
                                     <button type="submit" name="customer_status" value="invited" class="btn btn-sm <?= ($lead['customer_status'] ?? 'new') === 'invited' ? 'btn-info text-white' : 'btn-outline-info' ?>">Invited</button>
                                     <button type="submit" name="customer_status" value="accepted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'accepted' ? 'btn-success' : 'btn-outline-success' ?>">Accepted</button>
                                     <button type="submit" name="customer_status" value="declined" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'declined' ? 'btn-danger' : 'btn-outline-danger' ?>">Declined</button>
