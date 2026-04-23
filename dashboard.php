@@ -256,7 +256,7 @@ $pageTitle = 'My Leads';
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <span class="text-muted small"><i class="bi bi-people-fill me-1 text-danger"></i><strong><?= number_format($stats['total']) ?></strong> leads</span>
             <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-sm export-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-download me-1"></i>Export CSV
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">

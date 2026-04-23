@@ -281,6 +281,27 @@ html { scroll-behavior: smooth; }
 }
 .table-card .table td { padding: .85rem 1rem; vertical-align: middle; font-size: .875rem; }
 
+.export-btn {
+    background: linear-gradient(135deg, var(--cnl-red) 0%, #ff5b8f 100%);
+    border: 1px solid rgba(255, 0, 80, .85);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(255, 0, 80, .18);
+}
+.export-btn:hover,
+.export-btn:focus,
+.export-btn:active,
+.export-btn.show {
+    background: linear-gradient(135deg, var(--cnl-red-dk) 0%, #ff3b78 100%) !important;
+    border-color: rgba(255, 0, 80, .95) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 28px rgba(255, 0, 80, .28) !important;
+}
+
+[data-bs-theme="dark"] .export-btn {
+    box-shadow: 0 12px 30px rgba(255, 0, 80, .32);
+}
+
 /* ── Utilities ───────────────────────────────────────────────── */
 .btn-danger   { background: var(--cnl-red); border-color: var(--cnl-red); }
 .btn-danger:hover { background: var(--cnl-red-dk); border-color: var(--cnl-red-dk); }

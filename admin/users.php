@@ -203,7 +203,7 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div class="d-flex flex-wrap gap-2">
         <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-sm export-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-download me-1"></i>Export CSV
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
