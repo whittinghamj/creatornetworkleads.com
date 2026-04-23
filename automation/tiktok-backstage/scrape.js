@@ -16,6 +16,7 @@ const HEADLESS = process.env.HEADLESS !== "false";
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 90000);
 const DB_PORT = Number(process.env.DB_PORT || 3306);
 const DEBUG_INVITE = process.env.DEBUG_INVITE === "true";
+const BATCH_SIZE = Number(process.env.BATCH_SIZE || 30);
 
 const EMAIL = process.env.TT_BACKSTAGE_EMAIL;
 const PASSWORD = process.env.TT_BACKSTAGE_PASSWORD;
@@ -89,8 +90,9 @@ async function resolveUsernames() {
           AND username IS NOT NULL
           AND username != ''
         ORDER BY id ASC
-        LIMIT 30
-      `
+        LIMIT ?
+      `,
+      [BATCH_SIZE]
     );
 
     const creators = rows
