@@ -1,0 +1,65 @@
+-- ============================================================
+-- CreatorNetworkLeads.com – Additional Database Schema
+-- Run this SQL against the existing tiktokcreatorleads database
+-- The `creators` table already exists – do NOT re-create it.
+-- ============================================================
+
+-- Users table (customers + admins)
+CREATE TABLE IF NOT EXISTS `users` (
+  `id`           int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`   datetime         DEFAULT CURRENT_TIMESTAMP,
+  `name`         varchar(100)     NOT NULL,
+  `email`        varchar(255)     NOT NULL,
+  `password`     varchar(255)     NOT NULL,
+  `company`      varchar(100)     DEFAULT NULL,
+  `phone`        varchar(30)      DEFAULT NULL,
+  `status`       enum('active','inactive','pending') DEFAULT 'active',
+  `role`         enum('customer','admin')            DEFAULT 'customer',
+  `last_login`   datetime         DEFAULT NULL,
+  `notes`        text             DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Invitation types lookup
+CREATE TABLE IF NOT EXISTS `invitation_types` (
+  `id`          int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name`        varchar(100) NOT NULL,
+  `description` text         DEFAULT NULL,
+  `badge_color` varchar(20)  DEFAULT 'primary',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Seed default invitation types
+INSERT INTO `invitation_types` (`id`, `name`, `description`, `badge_color`) VALUES
+(1, 'LIVE Host',    'TikTok LIVE host invitation – for regular streamers',         'danger'),
+(2, 'Creator',      'Standard TikTok creator invitation',                          'primary'),
+(3, 'Affiliate',    'TikTok affiliate / shopping programme invitation',             'success'),
+(4, 'Shop Seller',  'TikTok Shop seller invitation',                               'warning'),
+(5, 'Agency',       'Agency-managed creator invitation',                           'info')
+ON DUPLICATE KEY UPDATE name = name;
+
+-- ============================================================
+-- Initial admin account
+-- Run setup.php to create the first admin interactively, OR
+-- generate a hash manually and paste below:
+--   php -r "echo password_hash('YourPassword123!', PASSWORD_DEFAULT);"
+-- Then uncomment and run:
+-- INSERT INTO `users` (`name`, `email`, `password`, `role`, `status`)
+-- VALUES ('Admin', 'admin@creatornetworkleads.com', '$2y$10$REPLACE_HASH_HERE', 'admin', 'active');
+-- ============================================================
+
+-- Reference: existing creators table (already present – do NOT recreate)
+-- CREATE TABLE `creators` (
+--   `id`                 int(11) unsigned NOT NULL AUTO_INCREMENT,
+--   `added`              varchar(32) DEFAULT NULL,
+--   `username`           varchar(32) DEFAULT NULL,
+--   `display_name`       varchar(32) DEFAULT NULL,
+--   `backstage_status`   varchar(32) DEFAULT 'unknown',
+--   `backstage_region`   varchar(2)  DEFAULT 'uk',
+--   `avatar`             text        DEFAULT NULL,
+--   `assigned_customer`  int(11)     DEFAULT NULL,   -- FK → users.id
+--   `backstage_checked`  varchar(3)  DEFAULT 'no',
+--   `invitation_type`    int(11)     DEFAULT NULL,   -- FK → invitation_types.id
+--   PRIMARY KEY (`id`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
