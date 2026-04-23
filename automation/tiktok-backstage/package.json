@@ -1,0 +1,16 @@
+{
+  "name": "tiktok-backstage-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Login and scrape TikTok Live Backstage core metrics",
+  "type": "module",
+  "scripts": {
+    "start": "node scrape.js",
+    "explore:usernames": "node explore-usernames.js",
+    "install:browsers": "playwright install --with-deps chromium"
+  },
+  "dependencies": {
+    "mysql2": "^3.15.2",
+    "playwright": "^1.54.2"
+  }
+}
