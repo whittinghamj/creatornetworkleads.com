@@ -1,11 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 import mysql from "mysql2/promise";
 import { chromium } from "playwright";
+import { fileURLToPath } from "node:url";
 
 const LOGIN_URL = "https://live-backstage.tiktok.com/login/";
 const SUCCESS_URL = "https://live-backstage.tiktok.com/portal/overview";
 const OUTPUT_DIR = path.resolve("output");
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT_DIR = path.resolve(SCRIPT_DIR, "..", "..");
+const AVATAR_DIR = path.join(PROJECT_ROOT_DIR, "assets", "uploads", "avatars");
+const AVATAR_PUBLIC_PREFIX = "/assets/uploads/avatars";
 const HEADLESS = process.env.HEADLESS !== "false";
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 90000);
 const DB_PORT = Number(process.env.DB_PORT || 3306);
@@ -32,6 +38,10 @@ const metricLabels = [
 
 async function ensureOutputDir() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
+}
+
+async function ensureAvatarDir() {
+  await fs.mkdir(AVATAR_DIR, { recursive: true });
 }
 
 function getDatabaseConfig() {
@@ -150,29 +160,105 @@ function pickInvitationTypeCode(creator) {
   );
 }
 
+function sanitizeAvatarSlug(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return normalized || "creator";
+}
+
+function extensionFromContentType(contentType) {
+  const value = String(contentType || "").toLowerCase();
+
+  if (value.includes("image/jpeg") || value.includes("image/jpg")) {
+    return ".jpg";
+  }
+  if (value.includes("image/png")) {
+    return ".png";
+  }
+  if (value.includes("image/webp")) {
+    return ".webp";
+  }
+  if (value.includes("image/gif")) {
+    return ".gif";
+  }
+
+  return ".jpg";
+}
+
+async function downloadAvatarToLocal(creator) {
+  const remoteUrl = String(creator.profilePhotoUrl || "").trim();
+  if (!remoteUrl || !/^https?:\/\//i.test(remoteUrl)) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(remoteUrl, {
+      redirect: "follow",
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    const extension = extensionFromContentType(contentType);
+    const hash = crypto
+      .createHash("sha1")
+      .update(remoteUrl)
+      .digest("hex")
+      .slice(0, 12);
+
+    const base = sanitizeAvatarSlug(creator.username || creator.displayName || creator.id);
+    const fileName = `${base}-${hash}${extension}`;
+    const filePath = path.join(AVATAR_DIR, fileName);
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    await fs.writeFile(filePath, buffer);
+
+    return `${AVATAR_PUBLIC_PREFIX}/${fileName}`;
+  } catch {
+    return null;
+  }
+}
+
 async function updateCreatorsInDatabase(creators) {
   const rowsToUpdate = creators.filter((creator) => creator.id !== null);
   if (!rowsToUpdate.length) {
     return;
   }
 
+  await ensureAvatarDir();
+
   const connection = await mysql.createConnection(getDatabaseConfig());
 
   try {
     for (const creator of rowsToUpdate) {
+      const localAvatarUrl = await downloadAvatarToLocal(creator);
+
       await connection.execute(
         `
           UPDATE creators
           SET display_name = ?,
               backstage_status = ?,
               backstage_checked = 'yes',
-              invitation_type = ?
+              invitation_type = ?,
+              avatar = COALESCE(?, avatar)
           WHERE id = ?
         `,
         [
           limitDbString(creator.displayName),
           limitDbString(creator.status),
           pickInvitationTypeCode(creator),
+          localAvatarUrl,
           creator.id,
         ]
       );
