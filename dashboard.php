@@ -137,7 +137,7 @@ $pageTitle = 'My Leads';
     <link rel="stylesheet" href="/assets/css/style.css">
     <script>(function(){var t=localStorage.getItem('cnl-theme')||'light';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
 </head>
-<body class="bg-light">
+<body>
 
 <!-- Topbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
@@ -349,7 +349,7 @@ $pageTitle = 'My Leads';
 </div>
 
 <!-- Footer -->
-<footer class="text-center text-muted py-3 border-top bg-white" style="font-size:.8rem">
+<footer class="text-center text-muted py-3 border-top" style="font-size:.8rem">
     © <?= date('Y') ?> <?= e(APP_NAME) ?> &nbsp;·&nbsp;
     <a href="/" class="text-muted text-decoration-none">Home</a> &nbsp;·&nbsp;
     <a href="/logout.php" class="text-muted text-decoration-none">Logout</a>

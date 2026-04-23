@@ -84,8 +84,13 @@ $(function () {
         $('#themeToggle').attr('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     }
 
-    // Apply correct icon on load
-    applyTheme(localStorage.getItem('cnl-theme') || 'light');
+    // Sync icon to current theme (theme already applied by inline head script)
+    (function syncIcon() {
+        var t = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        var isDark = t === 'dark';
+        $('#themeToggle i').attr('class', isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill');
+        $('#themeToggle').attr('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    })();
 
     $('#themeToggle').on('click', function () {
         var current = document.documentElement.getAttribute('data-bs-theme') || 'light';

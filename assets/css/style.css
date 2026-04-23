@@ -296,6 +296,10 @@ html { scroll-behavior: smooth; }
 }
 
 /* ── Dark mode overrides ─────────────────────────────────────── */
+[data-bs-theme="dark"] body {
+    background-color: #0d1117;
+    color: #e6edf3;
+}
 [data-bs-theme="dark"] .admin-main {
     background: #0d1117;
 }
