@@ -122,6 +122,24 @@ function normalizeInvitationTypeForDb(value) {
     return value;
   }
 
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized || normalized === "-" || normalized === "none") {
+    return null;
+  }
+
+  const labelToCode = {
+    regular: 1,
+    standard: 1,
+    premium: 2,
+    classic: 2,
+    elite: 3,
+    exclusive: 3,
+  };
+
+  if (labelToCode[normalized] !== undefined) {
+    return labelToCode[normalized];
+  }
+
   const match = String(value).match(/-?\d+/);
   return match ? Number.parseInt(match[0], 10) : null;
 }
@@ -711,6 +729,9 @@ function pickCreatorFromApiPayload(payload, username) {
       current.anchor_unique_id,
       current.display_id,
       current.user_name,
+      current.DisplayID,
+      current.UserBaseInfo?.DisplayID,
+      current.UserBaseInfo?.display_id,
     ]
       .filter(Boolean)
       .map((value) => String(value).toLowerCase());
@@ -733,6 +754,9 @@ function normalizeApiCreatorResult(raw, username) {
     raw.can_use_invitation_type ??
     raw.InvitationType ??
     raw.CanUseInvitationType ??
+    raw.InviteType ??
+    raw.UserBaseInfo?.InvitationType ??
+    raw.UserBaseInfo?.invitation_type ??
     null;
 
   return {
@@ -741,16 +765,20 @@ function normalizeApiCreatorResult(raw, username) {
       raw.username ||
       raw.anchor_unique_id ||
       raw.display_id ||
+      raw.DisplayID ||
+      raw.UserBaseInfo?.DisplayID ||
       username,
     profilePhotoUrl:
       raw.avatar_url ||
       raw.avatar ||
+      raw.UserBaseInfo?.Avatar ||
       raw.avatar_thumb?.url_list?.[0] ||
       raw.user_avatar ||
       null,
     displayName:
       raw.nick_name ||
       raw.nickname ||
+      raw.UserBaseInfo?.NickName ||
       raw.name ||
       raw.display_name ||
       null,
@@ -773,6 +801,61 @@ function normalizeApiCreatorResult(raw, username) {
       invitationTypeCode ||
       null,
   };
+}
+
+function buildApiCreatorLookup(payload, usernames) {
+  const lookup = new Map();
+
+  if (!payload || typeof payload !== "object") {
+    return lookup;
+  }
+
+  for (const username of usernames) {
+    const rawApiCreator = pickCreatorFromApiPayload(payload, username);
+    const normalized = normalizeApiCreatorResult(rawApiCreator, username);
+
+    if (normalized) {
+      lookup.set(username.toLowerCase(), normalized);
+    }
+  }
+
+  return lookup;
+}
+
+function mergeCreatorResults(tableResults, usernames, apiPayload) {
+  const tableLookup = new Map(
+    tableResults.map((entry) => [entry.username.toLowerCase(), entry])
+  );
+  const apiLookup = buildApiCreatorLookup(apiPayload, usernames);
+
+  return usernames.map((username) => {
+    const key = username.toLowerCase();
+    const tableEntry = tableLookup.get(key) || null;
+    const apiEntry = apiLookup.get(key) || null;
+
+    const merged = {
+      username,
+      profilePhotoUrl: null,
+      displayName: null,
+      status: "Missing",
+      statusReason: "No matching row returned by TikTok",
+      invitationTypeCode: null,
+      invitationType: null,
+      ...apiEntry,
+      ...tableEntry,
+    };
+
+    // Keep text from table UI when available, but preserve numeric code from API.
+    merged.invitationTypeCode =
+      pickInvitationTypeCode(tableEntry || {}) ??
+      pickInvitationTypeCode(apiEntry || {}) ??
+      null;
+
+    merged.invitationType =
+      tableEntry?.invitationType ?? apiEntry?.invitationType ?? null;
+
+    return merged;
+  });
 }
 
 async function extractCreatorResult(row) {
@@ -937,15 +1020,12 @@ async function main() {
     const apiResult = await submitCreatorSearch(page, creatorUsernames);
     const resultRows = await waitForInviteResults(page, creatorUsernames.length);
 
-    let creatorResults = await extractAllCreatorResults(resultRows, creatorUsernames);
-    if (apiResult?.payload && creatorUsernames.length === 1 && !creatorResults[0]) {
-      const rawApiCreator = pickCreatorFromApiPayload(
-        apiResult.payload,
-        creatorUsernames[0]
-      );
-      const normalized = normalizeApiCreatorResult(rawApiCreator, creatorUsernames[0]);
-      creatorResults = normalized ? [normalized] : [];
-    }
+    const tableResults = await extractAllCreatorResults(resultRows, creatorUsernames);
+    const creatorResults = mergeCreatorResults(
+      tableResults,
+      creatorUsernames,
+      apiResult?.payload || null
+    );
 
     const creatorResultsWithIds = creatorResults.map((result, index) => ({
       ...result,

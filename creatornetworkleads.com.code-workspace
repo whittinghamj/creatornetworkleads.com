@@ -3,5 +3,13 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"/^cd '/Users/whittinghamj/Dropbox/Source Code/creatornetworkleads\\.com/automation/tiktok-backstage' && node --check scrape\\.js && \\./run\\.sh$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
+		}
+	}
 }
