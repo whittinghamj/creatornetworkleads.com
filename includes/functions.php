@@ -120,9 +120,11 @@ function statusBadge(string $status): string
         'active'   => 'success',
         'inactive' => 'secondary',
         'pending'  => 'warning',
+        'new'      => 'secondary',
         'unknown'  => 'secondary',
         'invited'  => 'info',
         'accepted' => 'success',
+        'declined' => 'danger',
         'rejected' => 'danger',
         'yes'      => 'success',
         'no'       => 'secondary',
@@ -275,6 +277,34 @@ function ensurePackagesSchema(PDO $db): void
     $done = true;
 }
 
+function ensureCreatorsLeadTrackingSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $colStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+
+    $colStmt->execute(['creators', 'customer_status']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec("ALTER TABLE creators ADD COLUMN customer_status varchar(20) DEFAULT 'new' AFTER backstage_status");
+    }
+
+    $colStmt->execute(['creators', 'assigned_at']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE creators ADD COLUMN assigned_at datetime DEFAULT NULL AFTER assigned_customer');
+    }
+
+    // Backfill safe defaults for existing assigned leads.
+    $db->exec("UPDATE creators SET customer_status = 'new' WHERE assigned_customer IS NOT NULL AND (customer_status IS NULL OR customer_status = '')");
+    $db->exec('UPDATE creators SET assigned_at = NOW() WHERE assigned_customer IS NOT NULL AND assigned_at IS NULL');
+
+    $done = true;
+}
+
 function getPackages(PDO $db): array
 {
     ensurePackagesSchema($db);
@@ -299,6 +329,7 @@ function packageNameById(array $packages, ?int $packageId): string
 function assignAvailableLeadsForCustomer(PDO $db, int $customerId): array
 {
     ensurePackagesSchema($db);
+    ensureCreatorsLeadTrackingSchema($db);
 
     $today = date('Y-m-d');
     $userStmt = $db->prepare(
@@ -352,7 +383,7 @@ function assignAvailableLeadsForCustomer(PDO $db, int $customerId): array
         }
 
         $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
-        $updateSql = "UPDATE creators SET assigned_customer = ? WHERE id IN ($placeholders)";
+        $updateSql = "UPDATE creators SET assigned_customer = ?, assigned_at = NOW(), customer_status = 'new' WHERE id IN ($placeholders)";
         $updateStmt = $db->prepare($updateSql);
         $bind = array_merge([$customerId], $leadIds);
         $updateStmt->execute($bind);

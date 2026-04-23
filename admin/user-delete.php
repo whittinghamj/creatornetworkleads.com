@@ -22,6 +22,7 @@ if ($id === (int)$_SESSION['user_id']) {
 }
 
 $db   = getDB();
+ensureCreatorsLeadTrackingSchema($db);
 $stmt = $db->prepare('SELECT name FROM users WHERE id = ? LIMIT 1');
 $stmt->execute([$id]);
 $user = $stmt->fetch();
@@ -33,7 +34,8 @@ if (!$user) {
 }
 
 // Unassign their leads before deleting
-$db->prepare('UPDATE creators SET assigned_customer = NULL WHERE assigned_customer = ?')->execute([$id]);
+$db->prepare("UPDATE creators SET assigned_customer = NULL, assigned_at = NULL, customer_status = 'new' WHERE assigned_customer = ?")
+    ->execute([$id]);
 
 // Delete user
 $db->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);

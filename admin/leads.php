@@ -7,12 +7,14 @@ require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 $db      = getDB();
+ensureCreatorsLeadTrackingSchema($db);
 $perPage = 25;
 $page    = getInt('page', 1);
 $search  = getStr('search');
 $region  = getStr('region');
 $typeF   = getInt('type');
 $statusF = getStr('status');
+$customerStatusF = getStr('customer_status');
 $custF   = getInt('customer');
 $filter  = getStr('filter'); // 'unassigned' or 'assigned'
 
@@ -37,6 +39,10 @@ if ($statusF !== '') {
     $where[]  = 'c.backstage_status = ?';
     $params[] = $statusF;
 }
+if ($customerStatusF !== '') {
+    $where[]  = 'c.customer_status = ?';
+    $params[] = $customerStatusF;
+}
 if ($custF > 0) {
     $where[]  = 'c.assigned_customer = ?';
     $params[] = $custF;
@@ -56,6 +62,7 @@ $baseUrl = '/admin/leads.php?search=' . urlencode($search)
     . '&region=' . urlencode($region)
     . '&type=' . $typeF
     . '&status=' . urlencode($statusF)
+    . '&customer_status=' . urlencode($customerStatusF)
     . '&customer=' . $custF
     . '&filter=' . urlencode($filter);
 
@@ -77,9 +84,29 @@ $stmt = $db->prepare(
 $stmt->execute($stmtParams);
 $leads = $stmt->fetchAll();
 
+$statsStmt = $db->prepare(
+    "SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN c.customer_status = 'new'      THEN 1 ELSE 0 END) AS new_count,
+        SUM(CASE WHEN c.customer_status = 'invited'  THEN 1 ELSE 0 END) AS invited_count,
+        SUM(CASE WHEN c.customer_status = 'accepted' THEN 1 ELSE 0 END) AS accepted_count,
+        SUM(CASE WHEN c.customer_status = 'declined' THEN 1 ELSE 0 END) AS declined_count
+     FROM creators c
+     $whereStr"
+);
+$statsStmt->execute($params);
+$quickStats = $statsStmt->fetch() ?: [
+    'total' => 0,
+    'new_count' => 0,
+    'invited_count' => 0,
+    'accepted_count' => 0,
+    'declined_count' => 0,
+];
+
 // Filter options
 $regionRows   = $db->query('SELECT DISTINCT backstage_region FROM creators ORDER BY backstage_region')->fetchAll(PDO::FETCH_COLUMN);
 $statusRows   = $db->query('SELECT DISTINCT backstage_status FROM creators ORDER BY backstage_status')->fetchAll(PDO::FETCH_COLUMN);
+$customerStatusRows = ['new', 'invited', 'accepted', 'declined'];
 $invTypes     = getInvitationTypes();
 $customers    = $db->query("SELECT id, name, email FROM users WHERE role='customer' AND status='active' ORDER BY name")->fetchAll();
 
@@ -106,6 +133,40 @@ require __DIR__ . '/includes/header.php';
         <a href="/admin/leads.php" class="btn btn-sm btn-outline-secondary <?= $filter === '' && $custF === 0 ? 'active' : '' ?>">All</a>
         <a href="/admin/leads.php?filter=unassigned" class="btn btn-sm btn-outline-primary <?= $filter === 'unassigned' ? 'active' : '' ?>">Unassigned</a>
         <a href="/admin/leads.php?filter=assigned"   class="btn btn-sm btn-outline-success <?= $filter === 'assigned'   ? 'active' : '' ?>">Assigned</a>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
+            <div class="text-muted small">Total</div>
+            <div class="fw-bold fs-4"><?= number_format((int)$quickStats['total']) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
+            <div class="text-muted small">New</div>
+            <div class="fw-bold fs-4 text-secondary"><?= number_format((int)$quickStats['new_count']) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
+            <div class="text-muted small">Invited</div>
+            <div class="fw-bold fs-4 text-info"><?= number_format((int)$quickStats['invited_count']) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
+            <div class="text-muted small">Accepted</div>
+            <div class="fw-bold fs-4 text-success"><?= number_format((int)$quickStats['accepted_count']) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
+            <div class="text-muted small">Declined</div>
+            <div class="fw-bold fs-4 text-danger"><?= number_format((int)$quickStats['declined_count']) ?></div>
+        </div>
     </div>
 </div>
 
@@ -149,6 +210,16 @@ require __DIR__ . '/includes/header.php';
                 </select>
             </div>
             <div class="col-6 col-md-2">
+                <select name="customer_status" class="form-select form-select-sm auto-submit">
+                    <option value="">All Customer Statuses</option>
+                    <?php foreach ($customerStatusRows as $cs): ?>
+                        <option value="<?= e($cs) ?>" <?= $customerStatusF === $cs ? 'selected' : '' ?>>
+                            <?= ucfirst(e($cs)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
                 <select name="customer" class="form-select form-select-sm auto-submit">
                     <option value="0">All Customers</option>
                     <?php foreach ($customers as $c): ?>
@@ -177,7 +248,8 @@ require __DIR__ . '/includes/header.php';
                     <th>Username</th>
                     <th>Region</th>
                     <th>Invitation Type</th>
-                    <th>Status</th>
+                    <th>Backstage Status</th>
+                    <th>Customer Status</th>
                     <th>Checked</th>
                     <th>Assigned To</th>
                     <th class="text-end">Actions</th>
@@ -200,6 +272,7 @@ require __DIR__ . '/includes/header.php';
                     </td>
                     <td><?= invitationTypeBadge(isset($lead['invitation_type']) ? (int)$lead['invitation_type'] : null) ?></td>
                     <td><?= statusBadge($lead['backstage_status'] ?? 'unknown') ?></td>
+                    <td><?= statusBadge($lead['customer_status'] ?? 'new') ?></td>
                     <td><?= statusBadge($lead['backstage_checked'] ?? 'no') ?></td>
                     <td>
                         <?php if ($lead['assigned_customer']): ?>
@@ -229,7 +302,7 @@ require __DIR__ . '/includes/header.php';
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($leads)): ?>
-                <tr><td colspan="9" class="text-center py-4 text-muted">No leads found.</td></tr>
+                <tr><td colspan="10" class="text-center py-4 text-muted">No leads found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

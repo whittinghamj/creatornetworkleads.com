@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 $db = getDB();
+ensureCreatorsLeadTrackingSchema($db);
 $id = getInt('id');
 
 if ($id === 0) {
@@ -38,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $customerId = (int)postStr('customer_id');
 
     if ($action === 'unassign') {
-        $db->prepare('UPDATE creators SET assigned_customer = NULL WHERE id = ?')->execute([$id]);
+        $db->prepare("UPDATE creators SET assigned_customer = NULL, assigned_at = NULL, customer_status = 'new' WHERE id = ?")
+            ->execute([$id]);
         flash('Lead @' . ($lead['username'] ?? $id) . ' has been unassigned.', 'success');
         header('Location: /admin/leads.php');
         exit;
@@ -55,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$customer) {
                 $error = 'Selected customer not found or inactive.';
             } else {
-                $db->prepare('UPDATE creators SET assigned_customer = ? WHERE id = ?')
+                     $db->prepare("UPDATE creators SET assigned_customer = ?, assigned_at = NOW(), customer_status = 'new' WHERE id = ?")
                    ->execute([$customerId, $id]);
                 flash('Lead @' . ($lead['username'] ?? $id) . ' assigned to ' . $customer['name'] . '.', 'success');
                 header('Location: /admin/leads.php');

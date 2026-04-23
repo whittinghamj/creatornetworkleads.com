@@ -21,6 +21,37 @@ $search    = getStr('search');
 $region    = getStr('region');
 $typeFilter = getInt('type');
 
+ensureCreatorsLeadTrackingSchema($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'update_customer_status') {
+    verifyCsrf();
+
+    $leadId = (int)postStr('lead_id');
+    $newStatus = strtolower(postStr('customer_status'));
+    $allowedStatuses = ['invited', 'accepted', 'declined'];
+
+    if ($leadId <= 0 || !in_array($newStatus, $allowedStatuses, true)) {
+        flash('Invalid lead status update.', 'danger');
+    } else {
+        $upStmt = $db->prepare(
+            'UPDATE creators
+             SET customer_status = ?
+             WHERE id = ? AND assigned_customer = ?
+             LIMIT 1'
+        );
+        $upStmt->execute([$newStatus, $leadId, $userId]);
+
+        if ($upStmt->rowCount() > 0) {
+            flash('Lead status updated.', 'success');
+        } else {
+            flash('Lead not found or not assigned to your account.', 'danger');
+        }
+    }
+
+    header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard.php'));
+    exit;
+}
+
 // Build WHERE clause
 $where  = ['c.assigned_customer = ?'];
 $params = [$userId];
@@ -54,7 +85,7 @@ $stmt = $db->prepare(
     "SELECT c.*
      FROM creators c
      $whereStr
-     ORDER BY c.display_name ASC
+    ORDER BY COALESCE(c.assigned_at, '1970-01-01 00:00:00') DESC, c.id DESC
      LIMIT ? OFFSET ?"
 );
 $params[] = $perPage;
@@ -66,8 +97,9 @@ $leads = $stmt->fetchAll();
 $statsStmt = $db->prepare(
     "SELECT
         COUNT(*) AS total,
-        SUM(CASE WHEN backstage_status = 'invited'  THEN 1 ELSE 0 END) AS invited,
-        SUM(CASE WHEN backstage_status = 'accepted' THEN 1 ELSE 0 END) AS accepted
+        SUM(CASE WHEN customer_status = 'invited'  THEN 1 ELSE 0 END) AS invited,
+        SUM(CASE WHEN customer_status = 'accepted' THEN 1 ELSE 0 END) AS accepted,
+        SUM(CASE WHEN customer_status = 'declined' THEN 1 ELSE 0 END) AS declined
      FROM creators WHERE assigned_customer = ?"
 );
 $statsStmt->execute([$userId]);
@@ -165,10 +197,10 @@ $pageTitle = 'My Leads';
         <div class="col-6 col-md-3">
             <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#f3e8ff;color:#7c3aed">
-                    <i class="bi bi-globe fs-4"></i>
+                    <i class="bi bi-x-circle fs-4"></i>
                 </div>
-                <div class="fw-bold fs-3"><?= count($myRegions) ?></div>
-                <div class="text-muted small">Regions</div>
+                <div class="fw-bold fs-3\"><?= number_format((int)$stats['declined']) ?></div>
+                <div class="text-muted small">Declined</div>
             </div>
         </div>
     </div>
@@ -227,7 +259,7 @@ $pageTitle = 'My Leads';
         <?= paginationHtml($pag) ?>
     </div>
 
-    <!-- Lead Cards Grid -->
+    <!-- Leads Table -->
     <?php if (empty($leads)): ?>
         <div class="text-center py-5">
             <i class="bi bi-inbox fs-1 text-muted"></i>
@@ -237,46 +269,61 @@ $pageTitle = 'My Leads';
             </p>
         </div>
     <?php else: ?>
-        <div class="row g-3 mb-4">
-            <?php foreach ($leads as $lead): ?>
-            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
-                <div class="lead-card card h-100 p-0">
-                    <div class="card-body p-3 text-center">
-                        <!-- Avatar -->
-                        <div class="lead-avatar-wrap mb-2 d-inline-block position-relative">
-                            <?= avatarImg($lead['avatar'], $lead['display_name'] ?: $lead['username'] ?: '?', '64') ?>
-                            <?php
-                            $dotColor = match(strtolower($lead['backstage_status'] ?? 'unknown')) {
-                                'accepted' => 'bg-success',
-                                'invited'  => 'bg-info',
-                                'rejected' => 'bg-danger',
-                                default    => 'bg-secondary',
-                            };
-                            ?>
-                            <span class="status-dot <?= $dotColor ?>" title="<?= e(ucfirst($lead['backstage_status'] ?? 'unknown')) ?>"></span>
-                        </div>
-                        <!-- Name -->
-                        <div class="fw-semibold small text-truncate" title="<?= e($lead['display_name'] ?? '') ?>">
-                            <?= e($lead['display_name'] ?: '—') ?>
-                        </div>
-                        <div class="text-muted" style="font-size:.76rem">
-                            @<?= e($lead['username'] ?: '—') ?>
-                        </div>
-                        <!-- Badges -->
-                        <div class="mt-2 d-flex flex-wrap gap-1 justify-content-center">
-                            <?= invitationTypeBadge(isset($lead['invitation_type']) ? (int)$lead['invitation_type'] : null) ?>
-                            <span class="badge bg-dark"><?= strtoupper(e($lead['backstage_region'] ?? '')) ?></span>
-                        </div>
-                        <div class="mt-2">
-                            <?= statusBadge($lead['backstage_status'] ?? 'unknown') ?>
-                        </div>
-                        <div class="text-muted mt-1" style="font-size:.72rem">
-                            <?= e(getRegionName($lead['backstage_region'] ?? '')) ?>
-                        </div>
-                    </div>
-                </div>
+        <div class="table-card mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Creator</th>
+                            <th>Region</th>
+                            <th>Invitation Type</th>
+                            <th>Backstage Status</th>
+                            <th>Your Status</th>
+                            <th>Assigned</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($leads as $lead): ?>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <?= avatarImg($lead['avatar'], $lead['display_name'] ?: $lead['username'] ?: '?', '38') ?>
+                                    <div>
+                                        <div class="fw-semibold small"><?= e($lead['display_name'] ?: '—') ?></div>
+                                        <div class="text-muted" style="font-size:.75rem">@<?= e($lead['username'] ?: '—') ?></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold"><?= e(getRegionName($lead['backstage_region'] ?? '')) ?></div>
+                                <div class="text-muted" style="font-size:.72rem"><?= strtoupper(e($lead['backstage_region'] ?? '')) ?></div>
+                            </td>
+                            <td><?= invitationTypeBadge(isset($lead['invitation_type']) ? (int)$lead['invitation_type'] : null) ?></td>
+                            <td><?= statusBadge((string)($lead['backstage_status'] ?? 'unknown')) ?></td>
+                            <td><?= statusBadge((string)($lead['customer_status'] ?? 'new')) ?></td>
+                            <td class="small text-muted">
+                                <?php if (!empty($lead['assigned_at'])): ?>
+                                    <?= e(date('d M Y H:i', strtotime((string)$lead['assigned_at']))) ?>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end">
+                                <form method="POST" action="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
+                                    <?= csrfField() ?>
+                                    <input type="hidden" name="action" value="update_customer_status">
+                                    <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
+                                    <button type="submit" name="customer_status" value="invited" class="btn btn-sm <?= ($lead['customer_status'] ?? 'new') === 'invited' ? 'btn-info text-white' : 'btn-outline-info' ?>">Invited</button>
+                                    <button type="submit" name="customer_status" value="accepted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'accepted' ? 'btn-success' : 'btn-outline-success' ?>">Accepted</button>
+                                    <button type="submit" name="customer_status" value="declined" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'declined' ? 'btn-danger' : 'btn-outline-danger' ?>">Declined</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
-            <?php endforeach; ?>
         </div>
         <!-- Bottom pagination -->
         <div class="d-flex justify-content-center mb-2">

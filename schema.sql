@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS `customer_daily_lead_assignments` (
 --   `backstage_region`   varchar(2)  DEFAULT 'uk',
 --   `avatar`             text        DEFAULT NULL,
 --   `assigned_customer`  int(11)     DEFAULT NULL,   -- FK → users.id
+--   `assigned_at`        datetime    DEFAULT NULL,
+--   `customer_status`    varchar(20) DEFAULT 'new',  -- new/invited/accepted/declined
 --   `backstage_checked`  varchar(3)  DEFAULT 'no',
 --   `invitation_type`    int(11)     DEFAULT NULL,   -- integer code stored directly on creators
 --   PRIMARY KEY (`id`)
