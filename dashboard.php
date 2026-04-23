@@ -20,6 +20,28 @@ $page      = getInt('page', 1);
 $search    = getStr('search');
 $region    = getStr('region');
 $typeFilter = getInt('type');
+$export    = getStr('export');
+
+$exportWindows = [
+    'today' => [
+        'label' => "Today's Leads",
+        'from' => date('Y-m-d 00:00:00'),
+        'to' => date('Y-m-d 23:59:59'),
+        'filename' => 'todays-leads',
+    ],
+    'week' => [
+        'label' => "This Week's Leads",
+        'from' => date('Y-m-d 00:00:00', strtotime('monday this week')),
+        'to' => date('Y-m-d 23:59:59'),
+        'filename' => 'this-weeks-leads',
+    ],
+    'month' => [
+        'label' => "This Month's Leads",
+        'from' => date('Y-m-01 00:00:00'),
+        'to' => date('Y-m-d 23:59:59'),
+        'filename' => 'this-months-leads',
+    ],
+];
 
 ensureCreatorsLeadTrackingSchema($db);
 
@@ -82,6 +104,62 @@ if ($typeFilter > 0) {
 }
 
 $whereStr = 'WHERE ' . implode(' AND ', $where);
+
+if ($export !== '' && isset($exportWindows[$export])) {
+    $window = $exportWindows[$export];
+    $exportWhere = $where;
+    $exportParams = $params;
+    $exportWhere[] = 'c.assigned_at >= ?';
+    $exportWhere[] = 'c.assigned_at <= ?';
+    $exportParams[] = $window['from'];
+    $exportParams[] = $window['to'];
+    $exportWhereStr = 'WHERE ' . implode(' AND ', $exportWhere);
+
+    $exportStmt = $db->prepare(
+        "SELECT c.*
+         FROM creators c
+         $exportWhereStr
+         ORDER BY COALESCE(c.assigned_at, '1970-01-01 00:00:00') DESC, c.id DESC"
+    );
+    $exportStmt->execute($exportParams);
+    $exportLeads = $exportStmt->fetchAll();
+
+    $filename = 'my-leads-' . $window['filename'] . '-' . date('Ymd-His') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+
+    $out = fopen('php://output', 'w');
+    fputcsv($out, [
+        'Lead ID',
+        'Display Name',
+        'Username',
+        'Avatar URL',
+        'Region Code',
+        'Region Name',
+        'Invitation Type',
+        'Backstage Status',
+        'Your Status',
+        'Assigned At',
+    ]);
+
+    foreach ($exportLeads as $lead) {
+        fputcsv($out, [
+            (int)$lead['id'],
+            (string)($lead['display_name'] ?? ''),
+            (string)($lead['username'] ?? ''),
+            (string)($lead['avatar'] ?? ''),
+            (string)($lead['backstage_region'] ?? ''),
+            getRegionName((string)($lead['backstage_region'] ?? '')),
+            invitationTypeName(isset($lead['invitation_type']) ? (int)$lead['invitation_type'] : null),
+            (string)($lead['backstage_status'] ?? ''),
+            (string)($lead['customer_status'] ?? 'new'),
+            !empty($lead['assigned_at']) ? date('Y-m-d H:i:s', strtotime((string)$lead['assigned_at'])) : '',
+        ]);
+    }
+
+    fclose($out);
+    exit;
+}
 
 // Count
 $countStmt = $db->prepare("SELECT COUNT(*) FROM creators c $whereStr");
@@ -175,8 +253,30 @@ $pageTitle = 'My Leads';
             <h4 class="fw-bold mb-0">My Creator Leads</h4>
             <p class="text-muted small mb-0">TikTok creators assigned to your account</p>
         </div>
-        <div class="d-flex gap-2 align-items-center text-muted small">
-            <span><i class="bi bi-people-fill me-1 text-danger"></i><strong><?= number_format($stats['total']) ?></strong> leads</span>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="text-muted small"><i class="bi bi-people-fill me-1 text-danger"></i><strong><?= number_format($stats['total']) ?></strong> leads</span>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-download me-1"></i>Export CSV
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&export=today">
+                            Today's Leads
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&export=week">
+                            This Week's Leads
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&export=month">
+                            This Month's Leads
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
