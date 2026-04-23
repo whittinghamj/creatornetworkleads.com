@@ -13,6 +13,28 @@ $page    = getInt('page', 1);
 $search  = getStr('search');
 $role    = getStr('role');
 $status  = getStr('status');
+$export  = getStr('export');
+
+$exportWindows = [
+    'today' => [
+        'label' => "Today's Leads",
+        'from' => date('Y-m-d'),
+        'to' => date('Y-m-d'),
+        'filename' => 'todays-leads',
+    ],
+    'week' => [
+        'label' => "This Week's Leads",
+        'from' => date('Y-m-d', strtotime('monday this week')),
+        'to' => date('Y-m-d'),
+        'filename' => 'this-weeks-leads',
+    ],
+    'month' => [
+        'label' => "This Month's Leads",
+        'from' => date('Y-m-01'),
+        'to' => date('Y-m-d'),
+        'filename' => 'this-months-leads',
+    ],
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'set_package') {
     verifyCsrf();
@@ -72,6 +94,82 @@ if ($status !== '') {
 
 $whereStr = 'WHERE ' . implode(' AND ', $where);
 
+if ($export !== '' && isset($exportWindows[$export])) {
+    $window = $exportWindows[$export];
+
+    $exportStmt = $db->prepare(
+        "SELECT u.*, p.name AS package_name
+         FROM users u
+         LEFT JOIN packages p ON p.id = u.package_id
+         $whereStr
+         ORDER BY u.created_at DESC, u.id DESC"
+    );
+    $exportStmt->execute($params);
+    $exportUsers = $exportStmt->fetchAll();
+
+    $currentLeadStmt = $db->query(
+        'SELECT assigned_customer, COUNT(*) AS cnt
+         FROM creators
+         WHERE assigned_customer IS NOT NULL
+         GROUP BY assigned_customer'
+    );
+    $currentLeadCounts = [];
+    foreach ($currentLeadStmt->fetchAll() as $leadRow) {
+        $currentLeadCounts[(int)$leadRow['assigned_customer']] = (int)$leadRow['cnt'];
+    }
+
+    $periodLeadStmt = $db->prepare(
+        'SELECT user_id, SUM(assigned_count) AS cnt
+         FROM customer_daily_lead_assignments
+         WHERE assign_date >= ? AND assign_date <= ?
+         GROUP BY user_id'
+    );
+    $periodLeadStmt->execute([$window['from'], $window['to']]);
+    $periodLeadCounts = [];
+    foreach ($periodLeadStmt->fetchAll() as $periodRow) {
+        $periodLeadCounts[(int)$periodRow['user_id']] = (int)$periodRow['cnt'];
+    }
+
+    $filename = 'users-' . $window['filename'] . '-' . date('Ymd-His') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+
+    $out = fopen('php://output', 'w');
+    fputcsv($out, [
+        'User ID',
+        'Name',
+        'Email',
+        'Company',
+        'Package',
+        'Role',
+        'Status',
+        'Current Assigned Leads',
+        $window['label'],
+        'Joined',
+        'Last Login',
+    ]);
+
+    foreach ($exportUsers as $exportUser) {
+        $userId = (int)$exportUser['id'];
+        fputcsv($out, [
+            $userId,
+            (string)$exportUser['name'],
+            (string)$exportUser['email'],
+            (string)($exportUser['company'] ?? ''),
+            (string)($exportUser['package_name'] ?? 'None'),
+            (string)$exportUser['role'],
+            (string)$exportUser['status'],
+            $currentLeadCounts[$userId] ?? 0,
+            $periodLeadCounts[$userId] ?? 0,
+            !empty($exportUser['created_at']) ? date('Y-m-d', strtotime((string)$exportUser['created_at'])) : '',
+            !empty($exportUser['last_login']) ? date('Y-m-d H:i:s', strtotime((string)$exportUser['last_login'])) : '',
+        ]);
+    }
+
+    fclose($out);
+    exit;
+}
+
 $cntStmt = $db->prepare("SELECT COUNT(*) FROM users $whereStr");
 $cntStmt->execute($params);
 $total = (int)$cntStmt->fetchColumn();
@@ -103,9 +201,33 @@ require __DIR__ . '/includes/header.php';
         <h5 class="fw-bold mb-0">Manage Users</h5>
         <p class="text-muted small mb-0"><?= number_format($total) ?> user(s) found</p>
     </div>
-    <a href="/admin/user-form.php" class="btn btn-danger btn-sm">
-        <i class="bi bi-person-plus me-1"></i>Add User
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" href="/admin/users.php?search=<?= urlencode($search) ?>&role=<?= urlencode($role) ?>&status=<?= urlencode($status) ?>&export=today">
+                        Today's Leads
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/admin/users.php?search=<?= urlencode($search) ?>&role=<?= urlencode($role) ?>&status=<?= urlencode($status) ?>&export=week">
+                        This Week's Leads
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/admin/users.php?search=<?= urlencode($search) ?>&role=<?= urlencode($role) ?>&status=<?= urlencode($status) ?>&export=month">
+                        This Month's Leads
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <a href="/admin/user-form.php" class="btn btn-danger btn-sm">
+            <i class="bi bi-person-plus me-1"></i>Add User
+        </a>
+    </div>
 </div>
 
 <!-- Filters -->
