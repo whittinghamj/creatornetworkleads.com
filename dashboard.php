@@ -51,9 +51,8 @@ $offset = $pag['offset'];
 
 // Fetch leads
 $stmt = $db->prepare(
-    "SELECT c.*, it.name AS type_name, it.badge_color
+    "SELECT c.*
      FROM creators c
-     LEFT JOIN invitation_types it ON it.id = c.invitation_type
      $whereStr
      ORDER BY c.display_name ASC
      LIMIT ? OFFSET ?"

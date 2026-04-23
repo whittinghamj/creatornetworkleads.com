@@ -21,24 +21,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Invitation types lookup
-CREATE TABLE IF NOT EXISTS `invitation_types` (
-  `id`          int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name`        varchar(100) NOT NULL,
-  `description` text         DEFAULT NULL,
-  `badge_color` varchar(20)  DEFAULT 'primary',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Seed default invitation types
-INSERT INTO `invitation_types` (`id`, `name`, `description`, `badge_color`) VALUES
-(1, 'LIVE Host',    'TikTok LIVE host invitation – for regular streamers',         'danger'),
-(2, 'Creator',      'Standard TikTok creator invitation',                          'primary'),
-(3, 'Affiliate',    'TikTok affiliate / shopping programme invitation',             'success'),
-(4, 'Shop Seller',  'TikTok Shop seller invitation',                               'warning'),
-(5, 'Agency',       'Agency-managed creator invitation',                           'info')
-ON DUPLICATE KEY UPDATE name = name;
-
 -- ============================================================
 -- Initial admin account
 -- Run setup.php to create the first admin interactively, OR
@@ -60,6 +42,6 @@ ON DUPLICATE KEY UPDATE name = name;
 --   `avatar`             text        DEFAULT NULL,
 --   `assigned_customer`  int(11)     DEFAULT NULL,   -- FK → users.id
 --   `backstage_checked`  varchar(3)  DEFAULT 'no',
---   `invitation_type`    int(11)     DEFAULT NULL,   -- FK → invitation_types.id
+--   `invitation_type`    int(11)     DEFAULT NULL,   -- integer code stored directly on creators
 --   PRIMARY KEY (`id`)
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

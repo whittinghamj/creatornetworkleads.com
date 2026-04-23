@@ -67,10 +67,8 @@ $stmtParams[] = $perPage;
 $stmtParams[] = $offset;
 
 $stmt = $db->prepare(
-    "SELECT c.*, it.name AS type_name, it.badge_color,
-            u.name AS customer_name, u.email AS customer_email
+    "SELECT c.*, u.name AS customer_name, u.email AS customer_email
      FROM creators c
-     LEFT JOIN invitation_types it ON it.id = c.invitation_type
      LEFT JOIN users u ON u.id = c.assigned_customer
      $whereStr
      ORDER BY c.id DESC

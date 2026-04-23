@@ -77,15 +77,13 @@ function getRegionName(string $code): string
 
 function getInvitationTypes(): array
 {
-    static $cache = null;
-    if ($cache === null) {
-        try {
-            $cache = getDB()->query('SELECT * FROM invitation_types ORDER BY id')->fetchAll();
-        } catch (Exception $e) {
-            $cache = [];
-        }
-    }
-    return $cache;
+    return [
+        ['id' => 1, 'name' => 'LIVE Host',   'description' => 'TikTok LIVE host invitation', 'badge_color' => 'danger'],
+        ['id' => 2, 'name' => 'Creator',     'description' => 'Standard TikTok creator invitation', 'badge_color' => 'primary'],
+        ['id' => 3, 'name' => 'Affiliate',   'description' => 'TikTok affiliate invitation', 'badge_color' => 'success'],
+        ['id' => 4, 'name' => 'Shop Seller', 'description' => 'TikTok Shop seller invitation', 'badge_color' => 'warning'],
+        ['id' => 5, 'name' => 'Agency',      'description' => 'Agency-managed invitation', 'badge_color' => 'info'],
+    ];
 }
 
 function invitationTypeName(?int $id): string

@@ -126,6 +126,12 @@ function normalizeInvitationTypeForDb(value) {
   return match ? Number.parseInt(match[0], 10) : null;
 }
 
+function pickInvitationTypeCode(creator) {
+  return normalizeInvitationTypeForDb(
+    creator.invitationTypeCode ?? creator.invitationType
+  );
+}
+
 async function updateCreatorsInDatabase(creators) {
   const rowsToUpdate = creators.filter((creator) => creator.id !== null);
   if (!rowsToUpdate.length) {
@@ -148,7 +154,7 @@ async function updateCreatorsInDatabase(creators) {
         [
           limitDbString(creator.displayName),
           limitDbString(creator.status),
-          normalizeInvitationTypeForDb(creator.invitationType),
+          pickInvitationTypeCode(creator),
           creator.id,
         ]
       );
@@ -722,6 +728,13 @@ function normalizeApiCreatorResult(raw, username) {
     return null;
   }
 
+  const invitationTypeCode =
+    raw.invitation_type ??
+    raw.can_use_invitation_type ??
+    raw.InvitationType ??
+    raw.CanUseInvitationType ??
+    null;
+
   return {
     username:
       raw.unique_id ||
@@ -753,11 +766,11 @@ function normalizeApiCreatorResult(raw, username) {
       raw.ineligible_reason ||
       raw.sub_status_desc ||
       null,
+    invitationTypeCode,
     invitationType:
       raw.invitation_type_desc ||
-      raw.invitation_type ||
       raw.can_use_invitation_type_desc ||
-      raw.can_use_invitation_type ||
+      invitationTypeCode ||
       null,
   };
 }
@@ -805,6 +818,7 @@ async function extractCreatorResult(row) {
     displayName,
     status,
     statusReason,
+    invitationTypeCode: normalizeInvitationTypeForDb(invitationType),
     invitationType,
   };
 }
@@ -829,6 +843,7 @@ async function extractAllCreatorResults(rows, requestedUsernames) {
         displayName: null,
         status: "Missing",
         statusReason: "No matching row returned by TikTok",
+        invitationTypeCode: null,
         invitationType: null,
       }
     );

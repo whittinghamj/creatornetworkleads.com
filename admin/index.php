@@ -24,10 +24,8 @@ $recentUsers = $db->query(
 // Recent leads
 $recentLeads = $db->query(
     "SELECT c.id, c.display_name, c.username, c.backstage_region, c.backstage_status,
-            it.name AS type_name, it.badge_color,
-            u.name AS customer_name
+            c.invitation_type, u.name AS customer_name
      FROM creators c
-     LEFT JOIN invitation_types it ON it.id = c.invitation_type
      LEFT JOIN users u ON u.id = c.assigned_customer
      ORDER BY c.id DESC LIMIT 8"
 )->fetchAll();

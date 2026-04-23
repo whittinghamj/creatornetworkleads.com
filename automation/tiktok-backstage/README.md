@@ -26,6 +26,7 @@ After that, it opens the `Invite` flow in the `Creators` panel, searches for up 
 - `status`
 - `statusReason`
 - `invitationType`
+- `invitationTypeCode`
 
 ## Ubuntu 24 setup
 
