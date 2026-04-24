@@ -88,7 +88,6 @@ $statsStmt = $db->prepare(
     "SELECT
         COUNT(*) AS total,
         SUM(CASE WHEN LOWER(COALESCE(c.backstage_status, '')) = 'available' THEN 1 ELSE 0 END) AS available_count,
-        SUM(CASE WHEN c.customer_status = 'new'      THEN 1 ELSE 0 END) AS new_count,
         SUM(CASE WHEN c.customer_status = 'contacted' THEN 1 ELSE 0 END) AS contacted_count,
         SUM(CASE WHEN c.customer_status = 'invited'  THEN 1 ELSE 0 END) AS invited_count,
         SUM(CASE WHEN c.customer_status = 'accepted' THEN 1 ELSE 0 END) AS accepted_count,
@@ -100,7 +99,6 @@ $statsStmt->execute($params);
 $quickStats = $statsStmt->fetch() ?: [
     'total' => 0,
     'available_count' => 0,
-    'new_count' => 0,
     'contacted_count' => 0,
     'invited_count' => 0,
     'accepted_count' => 0,
@@ -152,12 +150,6 @@ require __DIR__ . '/includes/header.php';
         <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
             <div class="text-muted small">Available</div>
             <div class="fw-bold fs-4 text-success"><?= number_format((int)$quickStats['available_count']) ?></div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3 col-lg-2">
-        <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px">
-            <div class="text-muted small">New</div>
-            <div class="fw-bold fs-4 text-secondary"><?= number_format((int)$quickStats['new_count']) ?></div>
         </div>
     </div>
     <div class="col-6 col-md-3 col-lg-2">
