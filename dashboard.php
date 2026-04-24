@@ -535,15 +535,26 @@ $pageTitle = 'My Leads';
                                         <td><?= statusBadge((string)($lead['customer_status'] ?? 'new')) ?></td>
                                         <td class="small text-muted"><?php if (!empty($lead['assigned_at'])): ?><?= e(date('d M Y H:i', strtotime((string)$lead['assigned_at']))) ?><?php else: ?>—<?php endif; ?></td>
                                         <td class="text-end">
-                                            <form method="POST" action="/dashboard.php?view=leads&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
-                                                <?= csrfField() ?>
-                                                <input type="hidden" name="action" value="update_customer_status">
-                                                <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
-                                                <button type="submit" name="customer_status" value="contacted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'contacted' ? 'btn-primary' : 'btn-outline-primary' ?>">Contacted</button>
-                                                <button type="submit" name="customer_status" value="invited" class="btn btn-sm <?= ($lead['customer_status'] ?? 'new') === 'invited' ? 'btn-info text-white' : 'btn-outline-info' ?>">Invited</button>
-                                                <button type="submit" name="customer_status" value="accepted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'accepted' ? 'btn-success' : 'btn-outline-success' ?>">Accepted</button>
-                                                <button type="submit" name="customer_status" value="declined" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'declined' ? 'btn-danger' : 'btn-outline-danger' ?>">Declined</button>
-                                            </form>
+                                            <?php $profileUsername = ltrim((string)($lead['username'] ?? ''), '@'); ?>
+                                            <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
+                                                <?php if ($profileUsername !== ''): ?>
+                                                    <a href="https://tiktok.com/@<?= rawurlencode($profileUsername) ?>"
+                                                       class="btn btn-sm btn-outline-dark"
+                                                       target="_blank"
+                                                       rel="noopener noreferrer">
+                                                        <i class="bi bi-box-arrow-up-right me-1"></i>View Profile
+                                                    </a>
+                                                <?php endif; ?>
+                                                <form method="POST" action="/dashboard.php?view=leads&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
+                                                    <?= csrfField() ?>
+                                                    <input type="hidden" name="action" value="update_customer_status">
+                                                    <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
+                                                    <button type="submit" name="customer_status" value="contacted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'contacted' ? 'btn-primary' : 'btn-outline-primary' ?>">Contacted</button>
+                                                    <button type="submit" name="customer_status" value="invited" class="btn btn-sm <?= ($lead['customer_status'] ?? 'new') === 'invited' ? 'btn-info text-white' : 'btn-outline-info' ?>">Invited</button>
+                                                    <button type="submit" name="customer_status" value="accepted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'accepted' ? 'btn-success' : 'btn-outline-success' ?>">Accepted</button>
+                                                    <button type="submit" name="customer_status" value="declined" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'declined' ? 'btn-danger' : 'btn-outline-danger' ?>">Declined</button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
