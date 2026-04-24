@@ -297,7 +297,7 @@ $pageTitle = 'My Leads';
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#dbeafe;color:#2563eb">
                     <i class="bi bi-chat-dots-fill fs-4"></i>
                 </div>
-                <div class="fw-bold fs-3\"><?= number_format((int)$stats['contacted']) ?></div>
+                <div class="fw-bold fs-3"><?= number_format((int)$stats['contacted']) ?></div>
                 <div class="text-muted small">Contacted</div>
             </div>
         </div>
@@ -324,7 +324,7 @@ $pageTitle = 'My Leads';
                 <div class="dash-stat-icon mx-auto mb-2" style="background:#f3e8ff;color:#7c3aed">
                     <i class="bi bi-x-circle fs-4"></i>
                 </div>
-                <div class="fw-bold fs-3\"><?= number_format((int)$stats['declined']) ?></div>
+                <div class="fw-bold fs-3"><?= number_format((int)$stats['declined']) ?></div>
                 <div class="text-muted small">Declined</div>
             </div>
         </div>
