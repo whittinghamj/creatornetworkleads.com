@@ -25,10 +25,7 @@ if (!isset($activeNav))  { $activeNav  = ''; }
     <!-- ── Sidebar ──────────────────────────────────────────────── -->
     <aside class="sidebar" id="adminSidebar">
         <a href="/admin/" class="sidebar-brand">
-            <svg width="30" height="30" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="6" fill="#ff0050"/>
-                <path d="M18 8h-3v8.5a2.5 2.5 0 1 1-2.5-2.5c.17 0 .34.02.5.05V11a6 6 0 1 0 5 5.9V12h2.5A2.5 2.5 0 0 1 18 9.5V8z" fill="#fff"/>
-            </svg>
+            <img src="/assets/logo/logo.png" alt="<?= e(APP_NAME) ?>" class="cnl-logo-img">
             <div>
                 <div class="brand-text"><?= e(APP_NAME) ?></div>
                 <div class="brand-sub">Admin Panel</div>

@@ -15,6 +15,26 @@
 /* ── Base ──────────────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
+.cnl-logo-img {
+    height: 32px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,.2));
+}
+
+.navbar-brand .cnl-logo-img {
+    height: 30px;
+}
+
+.sidebar-brand .cnl-logo-img {
+    height: 34px;
+}
+
+[data-bs-theme="dark"] .cnl-logo-img {
+    filter: drop-shadow(0 3px 10px rgba(0,0,0,.45));
+}
+
 /* ── Landing hero ───────────────────────────────────────────── */
 .hero-section {
     background: linear-gradient(135deg, #0a0a0a 0%, #1a0010 50%, #0a0a0a 100%);
@@ -314,6 +334,7 @@ html { scroll-behavior: smooth; }
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
     .admin-main { margin-left: 0; }
+    .navbar-brand .cnl-logo-img { height: 28px; }
 }
 
 /* ── Dark mode overrides ─────────────────────────────────────── */

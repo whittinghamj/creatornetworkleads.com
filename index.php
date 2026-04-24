@@ -5,6 +5,10 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
 $pageTitle = 'Premium TikTok Creator Leads';
+$shareTitle = APP_NAME . ' - ' . APP_TAGLINE;
+$shareDescription = 'Premium verified TikTok creator leads for LIVE Backstage. Daily fresh leads with profile photos, usernames, regions and invitation types. Start free.';
+$shareUrl = rtrim(APP_URL, '/') . '/';
+$shareImage = rtrim(APP_URL, '/') . '/assets/dashboard_1.png';
 
 // Live stats from DB
 try {
@@ -44,6 +48,38 @@ while (count($heroCreators) < 5) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e(APP_NAME) ?> – <?= e(APP_TAGLINE) ?></title>
     <meta name="description" content="Premium verified TikTok creator leads for LIVE Backstage. Daily fresh leads with profile photos, usernames, regions and invitation types. Start free.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?= e(APP_NAME) ?>">
+    <meta property="og:title" content="<?= e($shareTitle) ?>">
+    <meta property="og:description" content="<?= e($shareDescription) ?>">
+    <meta property="og:url" content="<?= e($shareUrl) ?>">
+    <meta property="og:image" content="<?= e($shareImage) ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="CreatorNetworkLeads dashboard preview showing assigned TikTok creator leads">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= e($shareTitle) ?>">
+    <meta name="twitter:description" content="<?= e($shareDescription) ?>">
+    <meta name="twitter:image" content="<?= e($shareImage) ?>">
+    <meta name="twitter:image:alt" content="CreatorNetworkLeads dashboard preview showing assigned TikTok creator leads">
+    <link rel="apple-touch-icon" sizes="57x57" href="assets/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="assets/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="assets/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="assets/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="assets/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="assets/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="assets/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="assets/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="assets/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="assets/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/css/style.css">
@@ -55,10 +91,7 @@ while (count($heroCreators) < 5) {
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="6" fill="#ff0050"/>
-                <path d="M18 8h-3v8.5a2.5 2.5 0 1 1-2.5-2.5c.17 0 .34.02.5.05V11a6 6 0 1 0 5 5.9V12h2.5A2.5 2.5 0 0 1 18 9.5V8z" fill="#fff"/>
-            </svg>
+            <img src="/assets/logo/logo.png" alt="<?= e(APP_NAME) ?>" class="cnl-logo-img">
             <span class="fw-bold"><?= e(APP_NAME) ?></span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
