@@ -121,7 +121,12 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <div class="col-md-4">
                     <label class="form-label small fw-semibold">Category</label>
-                    <input type="text" name="category" class="form-control" value="<?= e((string)($template['category'] ?? '')) ?>" placeholder="e.g. Intro, Follow-up, Re-engagement">
+                    <select name="category" class="form-select">
+                        <option value="">— None —</option>
+                        <?php foreach (['Intro', 'Follow-up', 'Re-engagement', 'Closing'] as $cat): ?>
+                        <option value="<?= e($cat) ?>" <?= ($template['category'] ?? '') === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Sort Order</label>
