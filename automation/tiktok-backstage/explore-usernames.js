@@ -5,7 +5,7 @@ const LIVE_URL = "https://www.tiktok.com/live";
 const HEADLESS = process.env.HEADLESS !== "false";
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 90000);
 const DB_PORT = Number(process.env.DB_PORT || 3306);
-const REFRESH_ROUNDS = Number(process.env.REFRESH_ROUNDS || 10);
+const REFRESH_ROUNDS = Number(process.env.REFRESH_ROUNDS || 100);
 const REFRESH_WAIT_MS = Number(process.env.REFRESH_WAIT_MS || 5000);
 
 const LIVE_HREF_REGEX = /^\/@([^/]+)\/live(?:\/)?(?:\?.*)?$/i;
