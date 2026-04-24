@@ -570,8 +570,8 @@ while (count($heroCreators) < 5) {
     <div class="container">
         <div class="row g-4">
             <div class="col-lg-4">
-                <p class="text-muted small mb-1">© <?= date('Y') ?> <?= e(APP_NAME) ?>. All rights reserved.</p>
-                <p class="text-muted small">Not affiliated with TikTok or ByteDance Ltd.</p>
+                <p class="small mb-1">© <?= date('Y') ?> <?= e(APP_NAME) ?>. All rights reserved.</p>
+                <p class="small">Not affiliated with TikTok or ByteDance Ltd.</p>
             </div>
         </div>
     </div>
