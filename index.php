@@ -570,29 +570,6 @@ while (count($heroCreators) < 5) {
     <div class="container">
         <div class="row g-4">
             <div class="col-lg-4">
-                <div class="d-flex align-items-center gap-2 mb-3">
-                    <svg width="26" height="26" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#ff0050"/><path d="M18 8h-3v8.5a2.5 2.5 0 1 1-2.5-2.5c.17 0 .34.02.5.05V11a6 6 0 1 0 5 5.9V12h2.5A2.5 2.5 0 0 1 18 9.5V8z" fill="#fff"/></svg>
-                    <span class="fw-bold"><?= e(APP_NAME) ?></span>
-                </div>
-                <p class="text-muted small">Daily fresh TikTok creator leads for LIVE Backstage agencies and talent managers. Start free, scale as you grow.</p>
-            </div>
-            <div class="col-lg-2 col-6">
-                <h6 class="fw-semibold mb-3">Platform</h6>
-                <ul class="list-unstyled small text-muted">
-                    <li class="mb-1"><a href="#features" class="text-muted text-decoration-none">Features</a></li>
-                    <li class="mb-1"><a href="#leads-preview" class="text-muted text-decoration-none">Lead Profiles</a></li>
-                    <li class="mb-1"><a href="#how-it-works" class="text-muted text-decoration-none">How It Works</a></li>
-                    <li class="mb-1"><a href="#pricing" class="text-muted text-decoration-none">Pricing</a></li>
-                </ul>
-            </div>
-            <div class="col-lg-2 col-6">
-                <h6 class="fw-semibold mb-3">Account</h6>
-                <ul class="list-unstyled small text-muted">
-                    <li class="mb-1"><a href="/login.php" class="text-muted text-decoration-none">Log In</a></li>
-                    <li class="mb-1"><a href="/register.php" class="text-muted text-decoration-none">Register Free</a></li>
-                </ul>
-            </div>
-            <div class="col-lg-4">
                 <p class="text-muted small mb-1">© <?= date('Y') ?> <?= e(APP_NAME) ?>. All rights reserved.</p>
                 <p class="text-muted small">Not affiliated with TikTok or ByteDance Ltd.</p>
             </div>
