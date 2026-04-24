@@ -588,31 +588,43 @@ $pageTitle = 'My Leads';
                         <?php if (empty($messageTemplates)): ?>
                             <p class="text-muted small mb-0">No templates are published yet. Please check back soon.</p>
                         <?php else: ?>
-                            <div class="row g-3">
-                                <?php foreach ($messageTemplates as $tpl): ?>
-                                <div class="col-12 col-lg-6">
-                                    <div class="border rounded-3 h-100 p-3" style="border-color:var(--bs-border-color)">
-                                        <textarea class="d-none" id="templateQuickText<?= (int)$tpl['id'] ?>" readonly><?= e((string)$tpl['rendered_content']) ?></textarea>
-                                        <div class="d-flex align-items-start justify-content-between gap-2">
-                                            <div>
-                                                <div class="fw-semibold"><?= e($tpl['title']) ?></div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width:220px">Template</th>
+                                            <th style="width:160px">Category</th>
+                                            <th>Preview</th>
+                                            <th class="text-end" style="width:200px">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($messageTemplates as $tpl): ?>
+                                        <tr>
+                                            <td class="fw-semibold"><?= e($tpl['title']) ?></td>
+                                            <td>
                                                 <?php if (trim((string)($tpl['category'] ?? '')) !== ''): ?>
-                                                    <div class="mt-1"><span class="badge bg-info text-dark"><?= e((string)$tpl['category']) ?></span></div>
+                                                    <span class="badge bg-info text-dark"><?= e((string)$tpl['category']) ?></span>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">-</span>
                                                 <?php endif; ?>
-                                            </div>
-                                            <div class="d-flex gap-1">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#templateModal<?= (int)$tpl['id'] ?>">
-                                                    <i class="bi bi-eye me-1"></i>View
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger btn-copy-template" data-copy-target="templateQuickText<?= (int)$tpl['id'] ?>">
-                                                    <i class="bi bi-clipboard me-1"></i>Copy
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="small text-muted mt-2"><?= e(mb_strimwidth(preg_replace('/\s+/', ' ', (string)$tpl['rendered_content']), 0, 125, '...')) ?></div>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
+                                            </td>
+                                            <td class="small text-muted"><?= e(mb_strimwidth(preg_replace('/\s+/', ' ', (string)$tpl['rendered_content']), 0, 125, '...')) ?></td>
+                                            <td class="text-end">
+                                                <textarea class="d-none" id="templateQuickText<?= (int)$tpl['id'] ?>" readonly><?= e((string)$tpl['rendered_content']) ?></textarea>
+                                                <div class="d-inline-flex gap-1">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#templateModal<?= (int)$tpl['id'] ?>">
+                                                        <i class="bi bi-eye me-1"></i>View
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-copy-template" data-copy-target="templateQuickText<?= (int)$tpl['id'] ?>">
+                                                        <i class="bi bi-clipboard me-1"></i>Copy
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         <?php endif; ?>
                     </div>
