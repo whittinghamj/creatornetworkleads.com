@@ -20,6 +20,7 @@ $page      = getInt('page', 1);
 $search    = getStr('search');
 $region    = getStr('region');
 $typeFilter = getInt('type');
+$templateCategory = getStr('template_category');
 $export    = getStr('export');
 
 $exportWindows = [
@@ -44,6 +45,7 @@ $exportWindows = [
 ];
 
 ensureCreatorsLeadTrackingSchema($db);
+ensureMessageTemplatesSchema($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'update_customer_status') {
     verifyCsrf();
@@ -166,7 +168,15 @@ $countStmt = $db->prepare("SELECT COUNT(*) FROM creators c $whereStr");
 $countStmt->execute($params);
 $total = (int)$countStmt->fetchColumn();
 
-$pag    = buildPagination($total, $perPage, $page, '/dashboard.php?search=' . urlencode($search) . '&region=' . urlencode($region) . '&type=' . $typeFilter);
+$pag    = buildPagination(
+    $total,
+    $perPage,
+    $page,
+    '/dashboard.php?search=' . urlencode($search)
+    . '&region=' . urlencode($region)
+    . '&type=' . $typeFilter
+    . '&template_category=' . urlencode($templateCategory)
+);
 $offset = $pag['offset'];
 
 // Fetch leads
@@ -203,6 +213,36 @@ $regionStmt->execute([$userId]);
 $myRegions = $regionStmt->fetchAll(PDO::FETCH_COLUMN);
 
 $invTypes = getInvitationTypes();
+
+$categoryStmt = $db->query(
+    'SELECT DISTINCT category
+     FROM message_templates
+     WHERE is_published = 1 AND category IS NOT NULL AND category != ""
+     ORDER BY category ASC'
+);
+$templateCategories = $categoryStmt->fetchAll(PDO::FETCH_COLUMN);
+
+$templateWhere = ['is_published = 1'];
+$templateParams = [];
+if ($templateCategory !== '') {
+    $templateWhere[] = 'category = ?';
+    $templateParams[] = $templateCategory;
+}
+
+$templateStmt = $db->prepare(
+    'SELECT id, title, category, content
+     FROM message_templates
+     WHERE ' . implode(' AND ', $templateWhere) . '
+     ORDER BY sort_order ASC, id DESC'
+);
+$templateStmt->execute($templateParams);
+$messageTemplates = $templateStmt->fetchAll();
+
+foreach ($messageTemplates as &$tpl) {
+    $tpl['rendered_content'] = renderMessageTemplateForUser((string)$tpl['content'], $user);
+}
+unset($tpl);
+
 $pageTitle = 'My Leads';
 ?>
 <!DOCTYPE html>
@@ -259,17 +299,17 @@ $pageTitle = 'My Leads';
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&export=today">
+                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=today">
                             Today's Leads
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&export=week">
+                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=week">
                             This Week's Leads
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&export=month">
+                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=month">
                             This Month's Leads
                         </a>
                     </li>
@@ -365,7 +405,7 @@ $pageTitle = 'My Leads';
                     <button type="submit" class="btn btn-sm btn-danger flex-fill">
                         <i class="bi bi-funnel me-1"></i>Filter
                     </button>
-                    <a href="/dashboard.php" class="btn btn-sm btn-outline-secondary" title="Clear filters">
+                    <a href="/dashboard.php?template_category=<?= urlencode($templateCategory) ?>" class="btn btn-sm btn-outline-secondary" title="Clear filters">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 </div>
@@ -379,6 +419,78 @@ $pageTitle = 'My Leads';
             Showing <?= number_format(min($offset + 1, $total)) ?>–<?= number_format(min($offset + $perPage, $total)) ?> of <?= number_format($total) ?> leads
         </p>
         <?= paginationHtml($pag) ?>
+    </div>
+
+    <!-- Message templates -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                    <h6 class="fw-bold mb-0">Message Templates</h6>
+                    <p class="text-muted small mb-0">Ready-to-send scripts with your details already filled in.</p>
+                </div>
+                <span class="badge bg-secondary"><?= number_format(count($messageTemplates)) ?> available</span>
+            </div>
+
+            <form method="GET" action="/dashboard.php" class="row g-2 align-items-end mb-3">
+                <input type="hidden" name="search" value="<?= e($search) ?>">
+                <input type="hidden" name="region" value="<?= e($region) ?>">
+                <input type="hidden" name="type" value="<?= (int)$typeFilter ?>">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Template Category</label>
+                    <select name="template_category" class="form-select form-select-sm auto-submit">
+                        <option value="">All Categories</option>
+                        <?php foreach ($templateCategories as $cat): ?>
+                            <option value="<?= e((string)$cat) ?>" <?= $templateCategory === (string)$cat ? 'selected' : '' ?>>
+                                <?= e((string)$cat) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-funnel me-1"></i>Apply</button>
+                    <a href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>" class="btn btn-sm btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+
+            <?php if (empty($messageTemplates)): ?>
+                <p class="text-muted small mb-0">No templates are published yet. Please check back soon.</p>
+            <?php else: ?>
+                <div class="row g-3">
+                    <?php foreach ($messageTemplates as $tpl): ?>
+                    <div class="col-12 col-lg-6">
+                        <div class="border rounded-3 h-100 p-3" style="border-color:var(--bs-border-color)">
+                            <textarea class="d-none" id="templateQuickText<?= (int)$tpl['id'] ?>" readonly><?= e((string)$tpl['rendered_content']) ?></textarea>
+                            <div class="d-flex align-items-start justify-content-between gap-2">
+                                <div>
+                                    <div class="fw-semibold\"><?= e($tpl['title']) ?></div>
+                                    <?php if (trim((string)($tpl['category'] ?? '')) !== ''): ?>
+                                        <div class="mt-1"><span class="badge bg-info text-dark"><?= e((string)$tpl['category']) ?></span></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#templateModal<?= (int)$tpl['id'] ?>">
+                                        <i class="bi bi-eye me-1"></i>View
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger btn-copy-template"
+                                            data-copy-target="templateQuickText<?= (int)$tpl['id'] ?>">
+                                        <i class="bi bi-clipboard me-1"></i>Copy
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-2">
+                                <?= e(mb_strimwidth(preg_replace('/\s+/', ' ', (string)$tpl['rendered_content']), 0, 125, '...')) ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 
     <!-- Leads Table -->
@@ -432,7 +544,7 @@ $pageTitle = 'My Leads';
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
-                                <form method="POST" action="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
+                                <form method="POST" action="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
                                     <?= csrfField() ?>
                                     <input type="hidden" name="action" value="update_customer_status">
                                     <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
@@ -455,6 +567,30 @@ $pageTitle = 'My Leads';
     <?php endif; ?>
 
 </div>
+
+<?php foreach ($messageTemplates as $tpl): ?>
+<div class="modal fade" id="templateModal<?= (int)$tpl['id'] ?>" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><?= e($tpl['title']) ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" id="templateText<?= (int)$tpl['id'] ?>" rows="12" readonly><?= e((string)$tpl['rendered_content']) ?></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-danger btn-copy-template"
+                        data-copy-target="templateText<?= (int)$tpl['id'] ?>">
+                    <i class="bi bi-clipboard-check me-1"></i>Copy Message
+                </button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endforeach; ?>
 
 <!-- Footer -->
 <footer class="text-center text-muted py-3 border-top" style="font-size:.8rem">

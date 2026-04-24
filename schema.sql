@@ -51,6 +51,22 @@ CREATE TABLE IF NOT EXISTS `customer_daily_lead_assignments` (
   KEY `idx_assign_date` (`assign_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Message templates library (admin-managed, customer-viewable)
+CREATE TABLE IF NOT EXISTS `message_templates` (
+  `id`            int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`    datetime         DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    datetime         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `title`         varchar(160)     NOT NULL,
+  `category`      varchar(80)      DEFAULT NULL,
+  `content`       text             NOT NULL,
+  `is_published`  tinyint(1)       NOT NULL DEFAULT 1,
+  `sort_order`    int(11)          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_templates_published` (`is_published`),
+  KEY `idx_templates_category` (`category`),
+  KEY `idx_templates_sort` (`sort_order`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- ============================================================
 -- Initial admin account
 -- Run setup.php to create the first admin interactively, OR

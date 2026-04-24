@@ -97,4 +97,45 @@ $(function () {
         applyTheme(current === 'dark' ? 'light' : 'dark');
     });
 
+    /* ── Message template copy buttons ─────────────────────── */
+    $(document).on('click', '.btn-copy-template', function () {
+        var targetId = $(this).data('copy-target');
+        var source = document.getElementById(targetId);
+        if (!source) {
+            return;
+        }
+
+        var text = source.value || source.textContent || '';
+        if (!text) {
+            return;
+        }
+
+        var btn = $(this);
+        var originalHtml = btn.html();
+
+        function markCopied() {
+            btn.html('<i class="bi bi-check2 me-1"></i>Copied');
+            setTimeout(function () {
+                btn.html(originalHtml);
+            }, 1400);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(markCopied).catch(function () {
+                source.focus();
+                source.select();
+                if (document.execCommand('copy')) {
+                    markCopied();
+                }
+            });
+            return;
+        }
+
+        source.focus();
+        source.select();
+        if (document.execCommand('copy')) {
+            markCopied();
+        }
+    });
+
 });

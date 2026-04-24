@@ -306,6 +306,76 @@ function ensureCreatorsLeadTrackingSchema(PDO $db): void
     $done = true;
 }
 
+function ensureMessageTemplatesSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS message_templates (
+            id            int(11) unsigned NOT NULL AUTO_INCREMENT,
+            created_at    datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at    datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            title         varchar(160) NOT NULL,
+            category      varchar(80) DEFAULT NULL,
+            content       text NOT NULL,
+            is_published  tinyint(1) NOT NULL DEFAULT 1,
+            sort_order    int(11) NOT NULL DEFAULT 0,
+            PRIMARY KEY (id),
+            KEY idx_templates_published (is_published),
+            KEY idx_templates_category (category),
+            KEY idx_templates_sort (sort_order, id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $colStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+    $colStmt->execute(['message_templates', 'category']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE message_templates ADD COLUMN category varchar(80) DEFAULT NULL AFTER title');
+    }
+
+    $idxStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+    );
+    $idxStmt->execute(['message_templates', 'idx_templates_category']);
+    if ((int)$idxStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE message_templates ADD INDEX idx_templates_category (category)');
+    }
+
+    $done = true;
+}
+
+function messageTemplateTagsForUser(array $user): array
+{
+    $fullName = trim((string)($user['name'] ?? ''));
+    $firstName = $fullName;
+    if ($fullName !== '') {
+        $parts = preg_split('/\s+/', $fullName);
+        $firstName = (string)($parts[0] ?? $fullName);
+    }
+
+    $company = trim((string)($user['company'] ?? ''));
+
+    return [
+        '[firstname]' => $firstName,
+        '[fullname]'  => $fullName,
+        '[company]'   => $company,
+        '[agency]'    => $company,
+        '[email]'     => trim((string)($user['email'] ?? '')),
+        '[tel]'       => trim((string)($user['phone'] ?? '')),
+    ];
+}
+
+function renderMessageTemplateForUser(string $template, array $user): string
+{
+    $replacements = messageTemplateTagsForUser($user);
+    return str_ireplace(array_keys($replacements), array_values($replacements), $template);
+}
+
 function getPackages(PDO $db): array
 {
     ensurePackagesSchema($db);

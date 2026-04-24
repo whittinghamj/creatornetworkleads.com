@@ -216,6 +216,29 @@ footer.bg-dark a.text-muted:hover {
     border: 2px solid #fff;
 }
 
+.template-preview-pane {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    min-height: 180px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: .9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.template-tag-highlight {
+    display: inline-block;
+    background: rgba(255, 0, 80, .14);
+    color: #b00040;
+    border: 1px solid rgba(255, 0, 80, .28);
+    border-radius: 6px;
+    padding: 0 .25rem;
+    font-weight: 600;
+}
+
 /* ── Admin sidebar ──────────────────────────────────────────── */
 .admin-wrapper { display: flex; min-height: 100vh; }
 
@@ -460,6 +483,16 @@ footer.bg-dark a.text-muted:hover {
 }
 [data-bs-theme="dark"] .lead-avatar-wrap .status-dot {
     border-color: #161b22;
+}
+[data-bs-theme="dark"] .template-preview-pane {
+    background: #0d1117;
+    border-color: #30363d;
+    color: #e6edf3;
+}
+[data-bs-theme="dark"] .template-tag-highlight {
+    background: rgba(255, 0, 80, .24);
+    color: #ff8fb1;
+    border-color: rgba(255, 0, 80, .45);
 }
 
 /* Tip / highlight cards with inline light-green bg */

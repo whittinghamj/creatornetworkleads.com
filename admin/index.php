@@ -157,6 +157,9 @@ require __DIR__ . '/includes/header.php';
                     <a href="/admin/packages.php" class="btn btn-sm btn-outline-dark">
                         <i class="bi bi-box-seam me-1"></i>Packages
                     </a>
+                    <a href="/admin/message-templates.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chat-left-text me-1"></i>Message Templates
+                    </a>
                     <a href="/admin/leads.php?filter=unassigned" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-inbox me-1"></i>Unassigned Leads
                     </a>
