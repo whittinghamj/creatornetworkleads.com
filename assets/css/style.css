@@ -87,6 +87,27 @@ html { scroll-behavior: smooth; }
     backdrop-filter: blur(10px);
 }
 
+/* Improve contrast for muted text on dark sales-page sections */
+.hero-section .text-muted,
+#leads-preview .text-muted,
+footer.bg-dark .text-muted,
+section[style*="background:linear-gradient(180deg,#0d1117"] .text-white-50 {
+    color: rgba(255,255,255,.74) !important;
+}
+
+.hero-mockup .badge.text-muted,
+#leads-preview .table .text-muted {
+    color: rgba(255,255,255,.82) !important;
+}
+
+footer.bg-dark a.text-muted {
+    color: rgba(255,255,255,.8) !important;
+}
+
+footer.bg-dark a.text-muted:hover {
+    color: #ffffff !important;
+}
+
 /* ── Stats strip ────────────────────────────────────────────── */
 .stats-strip {
     background: linear-gradient(90deg, var(--cnl-red) 0%, #ff4080 100%);
