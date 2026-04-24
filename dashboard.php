@@ -21,7 +21,12 @@ $search    = getStr('search');
 $region    = getStr('region');
 $typeFilter = getInt('type');
 $templateCategory = getStr('template_category');
+$view      = strtolower(getStr('view', 'leads'));
 $export    = getStr('export');
+
+if (!in_array($view, ['leads', 'templates', 'account'], true)) {
+    $view = 'leads';
+}
 
 $exportWindows = [
     'today' => [
@@ -85,6 +90,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'update_custo
 
     header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard.php'));
     exit;
+}
+
+$accountErrors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'update_account') {
+    verifyCsrf();
+
+    $newName = postStr('name');
+    $newEmail = strtolower(postStr('email'));
+    $newCompany = postStr('company');
+    $newPhone = postStr('phone');
+    $newPassword = postStr('password');
+    $newPasswordConfirm = postStr('password_confirm');
+
+    if ($newName === '') {
+        $accountErrors[] = 'Full name is required.';
+    }
+    if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+        $accountErrors[] = 'A valid email address is required.';
+    }
+    if ($newPassword !== '' && strlen($newPassword) < 8) {
+        $accountErrors[] = 'New password must be at least 8 characters.';
+    }
+    if ($newPassword !== '' && $newPassword !== $newPasswordConfirm) {
+        $accountErrors[] = 'New passwords do not match.';
+    }
+
+    if (empty($accountErrors)) {
+        $emailCheckStmt = $db->prepare('SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1');
+        $emailCheckStmt->execute([$newEmail, $userId]);
+        if ($emailCheckStmt->fetch()) {
+            $accountErrors[] = 'Another account already uses that email address.';
+        }
+    }
+
+    if (empty($accountErrors)) {
+        if ($newPassword !== '') {
+            $updStmt = $db->prepare(
+                'UPDATE users SET name = ?, email = ?, company = ?, phone = ?, password = ? WHERE id = ? LIMIT 1'
+            );
+            $updStmt->execute([
+                $newName,
+                $newEmail,
+                $newCompany !== '' ? $newCompany : null,
+                $newPhone !== '' ? $newPhone : null,
+                password_hash($newPassword, PASSWORD_DEFAULT),
+                $userId,
+            ]);
+        } else {
+            $updStmt = $db->prepare(
+                'UPDATE users SET name = ?, email = ?, company = ?, phone = ? WHERE id = ? LIMIT 1'
+            );
+            $updStmt->execute([
+                $newName,
+                $newEmail,
+                $newCompany !== '' ? $newCompany : null,
+                $newPhone !== '' ? $newPhone : null,
+                $userId,
+            ]);
+        }
+
+        $_SESSION['user_name'] = $newName;
+        $_SESSION['user_email'] = $newEmail;
+
+        $user['name'] = $newName;
+        $user['email'] = $newEmail;
+        $user['company'] = $newCompany;
+        $user['phone'] = $newPhone;
+
+        flash('Your account profile has been updated.', 'success');
+        header('Location: /dashboard.php?view=account');
+        exit;
+    }
 }
 
 // Build WHERE clause
@@ -175,6 +252,7 @@ $pag    = buildPagination(
     '/dashboard.php?search=' . urlencode($search)
     . '&region=' . urlencode($region)
     . '&type=' . $typeFilter
+    . '&view=' . urlencode($view)
     . '&template_category=' . urlencode($templateCategory)
 );
 $offset = $pag['offset'];
@@ -243,6 +321,8 @@ foreach ($messageTemplates as &$tpl) {
 }
 unset($tpl);
 
+$publishedTemplateCount = (int)$db->query('SELECT COUNT(*) FROM message_templates WHERE is_published = 1')->fetchColumn();
+
 $pageTitle = 'My Leads';
 ?>
 <!DOCTYPE html>
@@ -285,287 +365,325 @@ $pageTitle = 'My Leads';
 
     <?= flashHtml() ?>
 
-    <!-- Header row -->
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div>
-            <h4 class="fw-bold mb-0">My Creator Leads</h4>
-            <p class="text-muted small mb-0">TikTok creators assigned to your account</p>
-        </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="text-muted small"><i class="bi bi-people-fill me-1 text-danger"></i><strong><?= number_format($stats['total']) ?></strong> leads</span>
-            <div class="dropdown">
-                <button class="btn btn-sm export-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-download me-1"></i>Export CSV
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=today">
-                            Today's Leads
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=week">
-                            This Week's Leads
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=month">
-                            This Month's Leads
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-4 col-xl">
-            <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
-                <div class="dash-stat-icon mx-auto mb-2" style="background:#fff0f4;color:#ff0050">
-                    <i class="bi bi-people-fill fs-4"></i>
-                </div>
-                <div class="fw-bold fs-3"><?= number_format($stats['total']) ?></div>
-                <div class="text-muted small">Total Leads</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl">
-            <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
-                <div class="dash-stat-icon mx-auto mb-2" style="background:#dbeafe;color:#2563eb">
-                    <i class="bi bi-chat-dots-fill fs-4"></i>
-                </div>
-                <div class="fw-bold fs-3"><?= number_format((int)$stats['contacted']) ?></div>
-                <div class="text-muted small">Contacted</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl">
-            <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
-                <div class="dash-stat-icon mx-auto mb-2" style="background:#e0f2fe;color:#0284c7">
-                    <i class="bi bi-send-fill fs-4"></i>
-                </div>
-                <div class="fw-bold fs-3"><?= number_format($stats['invited']) ?></div>
-                <div class="text-muted small">Invited</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl">
-            <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
-                <div class="dash-stat-icon mx-auto mb-2" style="background:#d1fae5;color:#059669">
-                    <i class="bi bi-check2-circle fs-4"></i>
-                </div>
-                <div class="fw-bold fs-3"><?= number_format($stats['accepted']) ?></div>
-                <div class="text-muted small">Accepted</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl">
-            <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
-                <div class="dash-stat-icon mx-auto mb-2" style="background:#f3e8ff;color:#7c3aed">
-                    <i class="bi bi-x-circle fs-4"></i>
-                </div>
-                <div class="fw-bold fs-3"><?= number_format((int)$stats['declined']) ?></div>
-                <div class="text-muted small">Declined</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body py-3">
-            <form method="GET" action="/dashboard.php" class="row g-2 align-items-end">
-                <div class="col-12 col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Search</label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control"
-                               placeholder="Name or username…" value="<?= e($search) ?>">
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label small fw-semibold mb-1">Region</label>
-                    <select name="region" class="form-select form-select-sm auto-submit">
-                        <option value="">All Regions</option>
-                        <?php foreach ($myRegions as $r): ?>
-                            <option value="<?= e($r) ?>" <?= $region === $r ? 'selected' : '' ?>>
-                                <?= e(getRegionName($r)) ?> (<?= strtoupper(e($r)) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label small fw-semibold mb-1">Invitation Type</label>
-                    <select name="type" class="form-select form-select-sm auto-submit">
-                        <option value="0">All Types</option>
-                        <?php foreach ($invTypes as $t): ?>
-                            <option value="<?= (int)$t['id'] ?>" <?= $typeFilter === (int)$t['id'] ? 'selected' : '' ?>>
-                                <?= e($t['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-12 col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-danger flex-fill">
-                        <i class="bi bi-funnel me-1"></i>Filter
-                    </button>
-                    <a href="/dashboard.php?template_category=<?= urlencode($templateCategory) ?>" class="btn btn-sm btn-outline-secondary" title="Clear filters">
-                        <i class="bi bi-x-lg"></i>
+    <div class="row g-4">
+        <div class="col-lg-3 col-xl-2">
+            <div class="card border-0 shadow-sm dashboard-menu-card">
+                <div class="card-body p-2">
+                    <a href="/dashboard.php?view=leads" class="dashboard-menu-link <?= $view === 'leads' ? 'active' : '' ?>">
+                        <span><i class="bi bi-table me-2"></i>Leads</span>
+                        <span class="badge bg-secondary"><?= number_format((int)$stats['total']) ?></span>
+                    </a>
+                    <a href="/dashboard.php?view=templates&template_category=<?= urlencode($templateCategory) ?>" class="dashboard-menu-link <?= $view === 'templates' ? 'active' : '' ?>">
+                        <span><i class="bi bi-chat-left-text me-2"></i>Message Templates</span>
+                        <span class="badge bg-secondary"><?= number_format($publishedTemplateCount) ?></span>
+                    </a>
+                    <a href="/dashboard.php?view=account" class="dashboard-menu-link <?= $view === 'account' ? 'active' : '' ?>">
+                        <span><i class="bi bi-person-gear me-2"></i>Edit Account</span>
                     </a>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Results info -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <p class="text-muted small mb-0">
-            Showing <?= number_format(min($offset + 1, $total)) ?>–<?= number_format(min($offset + $perPage, $total)) ?> of <?= number_format($total) ?> leads
-        </p>
-        <?= paginationHtml($pag) ?>
-    </div>
-
-    <!-- Message templates -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px">
-        <div class="card-body p-3 p-md-4">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                <div>
-                    <h6 class="fw-bold mb-0">Message Templates</h6>
-                    <p class="text-muted small mb-0">Ready-to-send scripts with your details already filled in.</p>
-                </div>
-                <span class="badge bg-secondary"><?= number_format(count($messageTemplates)) ?> available</span>
             </div>
+        </div>
 
-            <form method="GET" action="/dashboard.php" class="row g-2 align-items-end mb-3">
-                <input type="hidden" name="search" value="<?= e($search) ?>">
-                <input type="hidden" name="region" value="<?= e($region) ?>">
-                <input type="hidden" name="type" value="<?= (int)$typeFilter ?>">
-                <div class="col-12 col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Template Category</label>
-                    <select name="template_category" class="form-select form-select-sm auto-submit">
-                        <option value="">All Categories</option>
-                        <?php foreach ($templateCategories as $cat): ?>
-                            <option value="<?= e((string)$cat) ?>" <?= $templateCategory === (string)$cat ? 'selected' : '' ?>>
-                                <?= e((string)$cat) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-12 col-md-auto d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-funnel me-1"></i>Apply</button>
-                    <a href="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>" class="btn btn-sm btn-outline-secondary">Clear</a>
-                </div>
-            </form>
-
-            <?php if (empty($messageTemplates)): ?>
-                <p class="text-muted small mb-0">No templates are published yet. Please check back soon.</p>
-            <?php else: ?>
-                <div class="row g-3">
-                    <?php foreach ($messageTemplates as $tpl): ?>
-                    <div class="col-12 col-lg-6">
-                        <div class="border rounded-3 h-100 p-3" style="border-color:var(--bs-border-color)">
-                            <textarea class="d-none" id="templateQuickText<?= (int)$tpl['id'] ?>" readonly><?= e((string)$tpl['rendered_content']) ?></textarea>
-                            <div class="d-flex align-items-start justify-content-between gap-2">
-                                <div>
-                                    <div class="fw-semibold\"><?= e($tpl['title']) ?></div>
-                                    <?php if (trim((string)($tpl['category'] ?? '')) !== ''): ?>
-                                        <div class="mt-1"><span class="badge bg-info text-dark"><?= e((string)$tpl['category']) ?></span></div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="d-flex gap-1">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#templateModal<?= (int)$tpl['id'] ?>">
-                                        <i class="bi bi-eye me-1"></i>View
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger btn-copy-template"
-                                            data-copy-target="templateQuickText<?= (int)$tpl['id'] ?>">
-                                        <i class="bi bi-clipboard me-1"></i>Copy
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="small text-muted mt-2">
-                                <?= e(mb_strimwidth(preg_replace('/\s+/', ' ', (string)$tpl['rendered_content']), 0, 125, '...')) ?>
-                            </div>
+        <div class="col-lg-9 col-xl-10">
+            <?php if ($view === 'leads'): ?>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-0">My Creator Leads</h4>
+                        <p class="text-muted small mb-0">TikTok creators assigned to your account</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="text-muted small"><i class="bi bi-people-fill me-1 text-danger"></i><strong><?= number_format($stats['total']) ?></strong> leads</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm export-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download me-1"></i>Export CSV
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="/dashboard.php?view=leads&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=today">Today's Leads</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/dashboard.php?view=leads&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=week">This Week's Leads</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/dashboard.php?view=leads&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&export=month">This Month's Leads</a>
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                    <?php endforeach; ?>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
+                            <div class="dash-stat-icon mx-auto mb-2" style="background:#fff0f4;color:#ff0050"><i class="bi bi-people-fill fs-4"></i></div>
+                            <div class="fw-bold fs-3"><?= number_format($stats['total']) ?></div>
+                            <div class="text-muted small">Total Leads</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
+                            <div class="dash-stat-icon mx-auto mb-2" style="background:#dbeafe;color:#2563eb"><i class="bi bi-chat-dots-fill fs-4"></i></div>
+                            <div class="fw-bold fs-3"><?= number_format((int)$stats['contacted']) ?></div>
+                            <div class="text-muted small">Contacted</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
+                            <div class="dash-stat-icon mx-auto mb-2" style="background:#e0f2fe;color:#0284c7"><i class="bi bi-send-fill fs-4"></i></div>
+                            <div class="fw-bold fs-3"><?= number_format($stats['invited']) ?></div>
+                            <div class="text-muted small">Invited</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
+                            <div class="dash-stat-icon mx-auto mb-2" style="background:#d1fae5;color:#059669"><i class="bi bi-check2-circle fs-4"></i></div>
+                            <div class="fw-bold fs-3"><?= number_format($stats['accepted']) ?></div>
+                            <div class="text-muted small">Accepted</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="dash-stat-card card border-0 shadow-sm p-3 text-center">
+                            <div class="dash-stat-icon mx-auto mb-2" style="background:#f3e8ff;color:#7c3aed"><i class="bi bi-x-circle fs-4"></i></div>
+                            <div class="fw-bold fs-3"><?= number_format((int)$stats['declined']) ?></div>
+                            <div class="text-muted small">Declined</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body py-3">
+                        <form method="GET" action="/dashboard.php" class="row g-2 align-items-end">
+                            <input type="hidden" name="view" value="leads">
+                            <input type="hidden" name="template_category" value="<?= e($templateCategory) ?>">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold mb-1">Search</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" name="search" class="form-control" placeholder="Name or username…" value="<?= e($search) ?>">
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-semibold mb-1">Region</label>
+                                <select name="region" class="form-select form-select-sm auto-submit">
+                                    <option value="">All Regions</option>
+                                    <?php foreach ($myRegions as $r): ?>
+                                        <option value="<?= e($r) ?>" <?= $region === $r ? 'selected' : '' ?>><?= e(getRegionName($r)) ?> (<?= strtoupper(e($r)) ?>)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-semibold mb-1">Invitation Type</label>
+                                <select name="type" class="form-select form-select-sm auto-submit">
+                                    <option value="0">All Types</option>
+                                    <?php foreach ($invTypes as $t): ?>
+                                        <option value="<?= (int)$t['id'] ?>" <?= $typeFilter === (int)$t['id'] ? 'selected' : '' ?>><?= e($t['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-2 d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-danger flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+                                <a href="/dashboard.php?view=leads&template_category=<?= urlencode($templateCategory) ?>" class="btn btn-sm btn-outline-secondary" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="text-muted small mb-0">Showing <?= number_format(min($offset + 1, $total)) ?>–<?= number_format(min($offset + $perPage, $total)) ?> of <?= number_format($total) ?> leads</p>
+                    <?= paginationHtml($pag) ?>
+                </div>
+
+                <?php if (empty($leads)): ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <h5 class="mt-3 text-muted">No leads found</h5>
+                        <p class="text-muted small"><?= ($search || $region || $typeFilter) ? 'Try adjusting your filters.' : 'No creator leads have been assigned to your account yet. Please contact support.' ?></p>
+                    </div>
+                <?php else: ?>
+                    <div class="table-card mb-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Creator</th>
+                                        <th>Region</th>
+                                        <th>Invitation Type</th>
+                                        <th>Backstage Status</th>
+                                        <th>Your Status</th>
+                                        <th>Assigned</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($leads as $lead): ?>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <?= avatarImg($lead['avatar'], $lead['display_name'] ?: $lead['username'] ?: '?', '38') ?>
+                                                <div>
+                                                    <div class="fw-semibold small"><?= e($lead['display_name'] ?: '—') ?></div>
+                                                    <div class="text-muted" style="font-size:.75rem">@<?= e($lead['username'] ?: '—') ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small fw-semibold"><?= e(getRegionName($lead['backstage_region'] ?? '')) ?></div>
+                                            <div class="text-muted" style="font-size:.72rem"><?= strtoupper(e($lead['backstage_region'] ?? '')) ?></div>
+                                        </td>
+                                        <td><?= invitationTypeBadge(isset($lead['invitation_type']) ? (int)$lead['invitation_type'] : null) ?></td>
+                                        <td><?= statusBadge((string)($lead['backstage_status'] ?? 'unknown')) ?></td>
+                                        <td><?= statusBadge((string)($lead['customer_status'] ?? 'new')) ?></td>
+                                        <td class="small text-muted"><?php if (!empty($lead['assigned_at'])): ?><?= e(date('d M Y H:i', strtotime((string)$lead['assigned_at']))) ?><?php else: ?>—<?php endif; ?></td>
+                                        <td class="text-end">
+                                            <form method="POST" action="/dashboard.php?view=leads&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
+                                                <?= csrfField() ?>
+                                                <input type="hidden" name="action" value="update_customer_status">
+                                                <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
+                                                <button type="submit" name="customer_status" value="contacted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'contacted' ? 'btn-primary' : 'btn-outline-primary' ?>">Contacted</button>
+                                                <button type="submit" name="customer_status" value="invited" class="btn btn-sm <?= ($lead['customer_status'] ?? 'new') === 'invited' ? 'btn-info text-white' : 'btn-outline-info' ?>">Invited</button>
+                                                <button type="submit" name="customer_status" value="accepted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'accepted' ? 'btn-success' : 'btn-outline-success' ?>">Accepted</button>
+                                                <button type="submit" name="customer_status" value="declined" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'declined' ? 'btn-danger' : 'btn-outline-danger' ?>">Declined</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center mb-2"><?= paginationHtml($pag) ?></div>
+                <?php endif; ?>
+
+            <?php elseif ($view === 'templates'): ?>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div>
+                        <h4 class="fw-bold mb-0">Message Templates</h4>
+                        <p class="text-muted small mb-0">Copy and paste scripts with your profile data filled in.</p>
+                    </div>
+                    <span class="badge bg-secondary"><?= number_format(count($messageTemplates)) ?> available</span>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4" style="border-radius:14px">
+                    <div class="card-body p-3 p-md-4">
+                        <form method="GET" action="/dashboard.php" class="row g-2 align-items-end mb-3">
+                            <input type="hidden" name="view" value="templates">
+                            <input type="hidden" name="search" value="<?= e($search) ?>">
+                            <input type="hidden" name="region" value="<?= e($region) ?>">
+                            <input type="hidden" name="type" value="<?= (int)$typeFilter ?>">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold mb-1">Template Category</label>
+                                <select name="template_category" class="form-select form-select-sm auto-submit">
+                                    <option value="">All Categories</option>
+                                    <?php foreach ($templateCategories as $cat): ?>
+                                        <option value="<?= e((string)$cat) ?>" <?= $templateCategory === (string)$cat ? 'selected' : '' ?>><?= e((string)$cat) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-auto d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-funnel me-1"></i>Apply</button>
+                                <a href="/dashboard.php?view=templates&search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>" class="btn btn-sm btn-outline-secondary">Clear</a>
+                            </div>
+                        </form>
+
+                        <?php if (empty($messageTemplates)): ?>
+                            <p class="text-muted small mb-0">No templates are published yet. Please check back soon.</p>
+                        <?php else: ?>
+                            <div class="row g-3">
+                                <?php foreach ($messageTemplates as $tpl): ?>
+                                <div class="col-12 col-lg-6">
+                                    <div class="border rounded-3 h-100 p-3" style="border-color:var(--bs-border-color)">
+                                        <textarea class="d-none" id="templateQuickText<?= (int)$tpl['id'] ?>" readonly><?= e((string)$tpl['rendered_content']) ?></textarea>
+                                        <div class="d-flex align-items-start justify-content-between gap-2">
+                                            <div>
+                                                <div class="fw-semibold"><?= e($tpl['title']) ?></div>
+                                                <?php if (trim((string)($tpl['category'] ?? '')) !== ''): ?>
+                                                    <div class="mt-1"><span class="badge bg-info text-dark"><?= e((string)$tpl['category']) ?></span></div>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#templateModal<?= (int)$tpl['id'] ?>">
+                                                    <i class="bi bi-eye me-1"></i>View
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-copy-template" data-copy-target="templateQuickText<?= (int)$tpl['id'] ?>">
+                                                    <i class="bi bi-clipboard me-1"></i>Copy
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted mt-2"><?= e(mb_strimwidth(preg_replace('/\s+/', ' ', (string)$tpl['rendered_content']), 0, 125, '...')) ?></div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+            <?php else: ?>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div>
+                        <h4 class="fw-bold mb-0">Edit Account</h4>
+                        <p class="text-muted small mb-0">Update your profile details and optionally change your password.</p>
+                    </div>
+                </div>
+
+                <?php if (!empty($accountErrors)): ?>
+                    <div class="alert alert-danger mb-3">
+                        <ul class="mb-0 ps-3 small">
+                            <?php foreach ($accountErrors as $accErr): ?>
+                                <li><?= e($accErr) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <div class="card border-0 shadow-sm" style="border-radius:14px">
+                    <div class="card-header bg-white border-bottom fw-semibold py-3">Profile Information</div>
+                    <div class="card-body p-4">
+                        <form method="POST" action="/dashboard.php?view=account">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="action" value="update_account">
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Full Name</label>
+                                    <input type="text" name="name" class="form-control" value="<?= e((string)($user['name'] ?? '')) ?>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Email Address</label>
+                                    <input type="email" name="email" class="form-control" value="<?= e((string)($user['email'] ?? '')) ?>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Company / Agency</label>
+                                    <input type="text" name="company" class="form-control" value="<?= e((string)($user['company'] ?? '')) ?>">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Phone</label>
+                                    <input type="tel" name="phone" class="form-control" value="<?= e((string)($user['phone'] ?? '')) ?>">
+                                </div>
+
+                                <div class="col-12"><hr class="my-2"></div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">New Password <span class="text-muted fw-normal">(optional)</span></label>
+                                    <input type="password" name="password" class="form-control" placeholder="At least 8 characters">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Confirm New Password</label>
+                                    <input type="password" name="password_confirm" class="form-control" placeholder="Repeat new password">
+                                </div>
+
+                                <div class="col-12 pt-2">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-save me-1"></i>Save Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             <?php endif; ?>
         </div>
     </div>
-
-    <!-- Leads Table -->
-    <?php if (empty($leads)): ?>
-        <div class="text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted"></i>
-            <h5 class="mt-3 text-muted">No leads found</h5>
-            <p class="text-muted small">
-                <?= ($search || $region || $typeFilter) ? 'Try adjusting your filters.' : 'No creator leads have been assigned to your account yet. Please contact support.' ?>
-            </p>
-        </div>
-    <?php else: ?>
-        <div class="table-card mb-4">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Creator</th>
-                            <th>Region</th>
-                            <th>Invitation Type</th>
-                            <th>Backstage Status</th>
-                            <th>Your Status</th>
-                            <th>Assigned</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($leads as $lead): ?>
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <?= avatarImg($lead['avatar'], $lead['display_name'] ?: $lead['username'] ?: '?', '38') ?>
-                                    <div>
-                                        <div class="fw-semibold small"><?= e($lead['display_name'] ?: '—') ?></div>
-                                        <div class="text-muted" style="font-size:.75rem">@<?= e($lead['username'] ?: '—') ?></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="small fw-semibold"><?= e(getRegionName($lead['backstage_region'] ?? '')) ?></div>
-                                <div class="text-muted" style="font-size:.72rem"><?= strtoupper(e($lead['backstage_region'] ?? '')) ?></div>
-                            </td>
-                            <td><?= invitationTypeBadge(isset($lead['invitation_type']) ? (int)$lead['invitation_type'] : null) ?></td>
-                            <td><?= statusBadge((string)($lead['backstage_status'] ?? 'unknown')) ?></td>
-                            <td><?= statusBadge((string)($lead['customer_status'] ?? 'new')) ?></td>
-                            <td class="small text-muted">
-                                <?php if (!empty($lead['assigned_at'])): ?>
-                                    <?= e(date('d M Y H:i', strtotime((string)$lead['assigned_at']))) ?>
-                                <?php else: ?>
-                                    —
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-end">
-                                <form method="POST" action="/dashboard.php?search=<?= urlencode($search) ?>&region=<?= urlencode($region) ?>&type=<?= (int)$typeFilter ?>&template_category=<?= urlencode($templateCategory) ?>&page=<?= (int)$page ?>" class="d-inline-flex gap-1">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="action" value="update_customer_status">
-                                    <input type="hidden" name="lead_id" value="<?= (int)$lead['id'] ?>">
-                                    <button type="submit" name="customer_status" value="contacted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'contacted' ? 'btn-primary' : 'btn-outline-primary' ?>">Contacted</button>
-                                    <button type="submit" name="customer_status" value="invited" class="btn btn-sm <?= ($lead['customer_status'] ?? 'new') === 'invited' ? 'btn-info text-white' : 'btn-outline-info' ?>">Invited</button>
-                                    <button type="submit" name="customer_status" value="accepted" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'accepted' ? 'btn-success' : 'btn-outline-success' ?>">Accepted</button>
-                                    <button type="submit" name="customer_status" value="declined" class="btn btn-sm <?= ($lead['customer_status'] ?? '') === 'declined' ? 'btn-danger' : 'btn-outline-danger' ?>">Declined</button>
-                                </form>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <!-- Bottom pagination -->
-        <div class="d-flex justify-content-center mb-2">
-            <?= paginationHtml($pag) ?>
-        </div>
-    <?php endif; ?>
-
 </div>
 
 <?php foreach ($messageTemplates as $tpl): ?>

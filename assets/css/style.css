@@ -216,6 +216,34 @@ footer.bg-dark a.text-muted:hover {
     border: 2px solid #fff;
 }
 
+.dashboard-menu-card {
+    border-radius: 14px;
+}
+
+.dashboard-menu-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .65rem .75rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #334155;
+    font-weight: 600;
+    margin-bottom: .25rem;
+    transition: background .15s ease, color .15s ease;
+}
+
+.dashboard-menu-link:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.dashboard-menu-link.active {
+    background: rgba(255, 0, 80, .1);
+    color: #b00040;
+}
+
 .template-preview-pane {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -483,6 +511,17 @@ footer.bg-dark a.text-muted:hover {
 }
 [data-bs-theme="dark"] .lead-avatar-wrap .status-dot {
     border-color: #161b22;
+}
+[data-bs-theme="dark"] .dashboard-menu-link {
+    color: #c9d1d9;
+}
+[data-bs-theme="dark"] .dashboard-menu-link:hover {
+    background: #21262d;
+    color: #e6edf3;
+}
+[data-bs-theme="dark"] .dashboard-menu-link.active {
+    background: rgba(255, 0, 80, .2);
+    color: #ff8fb1;
 }
 [data-bs-theme="dark"] .template-preview-pane {
     background: #0d1117;
