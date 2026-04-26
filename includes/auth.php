@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/functions.php';
 
 function isLoggedIn(): bool
 {
@@ -47,6 +48,9 @@ function getCurrentUser(): ?array
 function loginUser(string $email, string $password): string
 {
     $db   = getDB();
+    ensureUserIpTrackingSchema($db);
+    ensureUserIpAuditSchema($db);
+
     $stmt = $db->prepare('SELECT id, name, email, password, role, status FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([strtolower(trim($email))]);
     $user = $stmt->fetch();
@@ -69,7 +73,9 @@ function loginUser(string $email, string $password): string
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_role']  = $user['role'];
 
-    $db->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
+    $ipAddress = getClientIpAddress();
+    $db->prepare('UPDATE users SET last_login = NOW(), last_login_ip = ? WHERE id = ?')->execute([$ipAddress ?: null, $user['id']]);
+    logUserIpAudit($db, (int)$user['id'], 'login', $ipAddress);
 
     return '';
 }

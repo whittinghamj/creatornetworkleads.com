@@ -539,7 +539,7 @@ $pageTitle = 'My Leads';
                                             <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
                                                 <?php if ($profileUsername !== ''): ?>
                                                     <a href="https://tiktok.com/@<?= rawurlencode($profileUsername) ?>"
-                                                       class="btn btn-sm btn-outline-dark"
+                                                                         class="btn btn-sm btn-outline-danger"
                                                        target="_blank"
                                                        rel="noopener noreferrer">
                                                         <i class="bi bi-box-arrow-up-right me-1"></i>View Profile

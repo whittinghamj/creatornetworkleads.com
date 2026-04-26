@@ -221,6 +221,89 @@ function getInt(string $key, int $default = 0): int
     return (int)($_GET[$key] ?? $default);
 }
 
+function getClientIpAddress(): string
+{
+    $keys = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_REAL_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'REMOTE_ADDR',
+    ];
+
+    foreach ($keys as $key) {
+        $raw = trim((string)($_SERVER[$key] ?? ''));
+        if ($raw === '') {
+            continue;
+        }
+
+        // X-Forwarded-For may contain a comma-separated chain.
+        $candidate = trim(explode(',', $raw)[0] ?? '');
+        if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP)) {
+            return $candidate;
+        }
+    }
+
+    return '';
+}
+
+function ensureUserIpTrackingSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $colStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+
+    $colStmt->execute(['users', 'signup_ip']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE users ADD COLUMN signup_ip varchar(45) DEFAULT NULL AFTER phone');
+    }
+
+    $colStmt->execute(['users', 'last_login_ip']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE users ADD COLUMN last_login_ip varchar(45) DEFAULT NULL AFTER last_login');
+    }
+
+    $done = true;
+}
+
+function ensureUserIpAuditSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS user_ip_audit (
+            id          int(11) unsigned NOT NULL AUTO_INCREMENT,
+            user_id     int(11) unsigned NOT NULL,
+            event_type  varchar(20) NOT NULL,
+            ip_address  varchar(45) DEFAULT NULL,
+            created_at  datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_user_ip_audit_user (user_id),
+            KEY idx_user_ip_audit_event (event_type),
+            KEY idx_user_ip_audit_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $done = true;
+}
+
+function logUserIpAudit(PDO $db, int $userId, string $eventType, ?string $ipAddress = null): void
+{
+    ensureUserIpAuditSchema($db);
+
+    $stmt = $db->prepare(
+        'INSERT INTO user_ip_audit (user_id, event_type, ip_address) VALUES (?, ?, ?)'
+    );
+    $stmt->execute([$userId, $eventType, $ipAddress ?: null]);
+}
+
 // ---------------------------------------------------------------------------
 // Packages + Daily Lead Assignment
 // ---------------------------------------------------------------------------

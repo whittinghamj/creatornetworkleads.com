@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 $db = getDB();
+ensureUserIpTrackingSchema($db);
 
 // Aggregate stats
 $totalUsers      = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'customer'")->fetchColumn();
@@ -18,7 +19,10 @@ $unassignedLeads = $totalLeads - $assignedLeads;
 
 // Recent signups
 $recentUsers = $db->query(
-    "SELECT id, name, email, company, status, role, created_at FROM users ORDER BY created_at DESC LIMIT 8"
+    "SELECT id, name, email, company, status, role, created_at, signup_ip, last_login, last_login_ip
+     FROM users
+     ORDER BY created_at DESC
+     LIMIT 8"
 )->fetchAll();
 
 // Recent leads
@@ -113,6 +117,8 @@ require __DIR__ . '/includes/header.php';
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Signup IP</th>
+                            <th>Last Login IP</th>
                             <th>Status</th>
                             <th>Role</th>
                             <th></th>
@@ -128,6 +134,8 @@ require __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <td class="text-muted small"><?= e($u['email']) ?></td>
+                            <td class="text-muted small"><?= !empty($u['signup_ip']) ? e((string)$u['signup_ip']) : '—' ?></td>
+                            <td class="text-muted small"><?= !empty($u['last_login_ip']) ? e((string)$u['last_login_ip']) : '—' ?></td>
                             <td><?= statusBadge($u['status']) ?></td>
                             <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'dark' : 'secondary' ?>"><?= e(ucfirst($u['role'])) ?></span></td>
                             <td class="text-end">
@@ -136,7 +144,7 @@ require __DIR__ . '/includes/header.php';
                         </tr>
                         <?php endforeach; ?>
                         <?php if (empty($recentUsers)): ?>
-                        <tr><td colspan="5" class="text-center text-muted py-4">No users yet.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-4">No users yet.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

@@ -13,9 +13,11 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password`     varchar(255)     NOT NULL,
   `company`      varchar(100)     DEFAULT NULL,
   `phone`        varchar(30)      DEFAULT NULL,
+  `signup_ip`    varchar(45)      DEFAULT NULL,
   `status`       enum('active','inactive','pending') DEFAULT 'active',
   `role`         enum('customer','admin')            DEFAULT 'customer',
   `last_login`   datetime         DEFAULT NULL,
+  `last_login_ip` varchar(45)     DEFAULT NULL,
   `notes`        text             DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
@@ -65,6 +67,19 @@ CREATE TABLE IF NOT EXISTS `message_templates` (
   KEY `idx_templates_published` (`is_published`),
   KEY `idx_templates_category` (`category`),
   KEY `idx_templates_sort` (`sort_order`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- User IP audit history (signup/login events)
+CREATE TABLE IF NOT EXISTS `user_ip_audit` (
+  `id`          int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id`     int(11) unsigned NOT NULL,
+  `event_type`  varchar(20)      NOT NULL,
+  `ip_address`  varchar(45)      DEFAULT NULL,
+  `created_at`  datetime         DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_ip_audit_user` (`user_id`),
+  KEY `idx_user_ip_audit_event` (`event_type`),
+  KEY `idx_user_ip_audit_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ============================================================

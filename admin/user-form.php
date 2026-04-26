@@ -8,6 +8,8 @@ requireAdmin();
 
 $db    = getDB();
 ensurePackagesSchema($db);
+ensureUserIpTrackingSchema($db);
+ensureUserIpAuditSchema($db);
 $id    = getInt('id');
 $isNew = ($id === 0);
 
@@ -36,6 +38,19 @@ if (!$isNew) {
         exit;
     }
     $user = array_merge($user, $existing);
+}
+
+$ipAuditRows = [];
+if (!$isNew) {
+    $auditStmt = $db->prepare(
+        'SELECT event_type, ip_address, created_at
+         FROM user_ip_audit
+         WHERE user_id = ?
+         ORDER BY created_at DESC, id DESC
+         LIMIT 12'
+    );
+    $auditStmt->execute([$id]);
+    $ipAuditRows = $auditStmt->fetchAll();
 }
 
 $errors = [];
@@ -296,6 +311,36 @@ require __DIR__ . '/includes/header.php';
                             <i class="bi bi-magic me-1"></i>Assign Package Leads Now
                         </button>
                     </form>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3" style="border-radius:14px">
+            <div class="card-header bg-white border-bottom fw-semibold py-3">IP Audit History</div>
+            <div class="card-body p-0">
+                <?php if (empty($ipAuditRows)): ?>
+                    <p class="text-muted small mb-0 p-3">No IP audit history recorded yet.</p>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Event</th>
+                                    <th>IP Address</th>
+                                    <th class="pe-3">When</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($ipAuditRows as $auditRow): ?>
+                                <tr>
+                                    <td class="ps-3"><?= e(ucfirst((string)$auditRow['event_type'])) ?></td>
+                                    <td class="small text-muted"><?= !empty($auditRow['ip_address']) ? e((string)$auditRow['ip_address']) : '—' ?></td>
+                                    <td class="small text-muted pe-3"><?= !empty($auditRow['created_at']) ? e(date('d M Y H:i', strtotime((string)$auditRow['created_at']))) : '—' ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

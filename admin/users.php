@@ -8,6 +8,7 @@ requireAdmin();
 
 $db      = getDB();
 ensurePackagesSchema($db);
+ensureUserIpTrackingSchema($db);
 $perPage = 20;
 $page    = getInt('page', 1);
 $search  = getStr('search');
@@ -146,7 +147,9 @@ if ($export !== '' && isset($exportWindows[$export])) {
         'Current Assigned Leads',
         $window['label'],
         'Joined',
+        'Signup IP',
         'Last Login',
+        'Last Login IP',
     ]);
 
     foreach ($exportUsers as $exportUser) {
@@ -162,7 +165,9 @@ if ($export !== '' && isset($exportWindows[$export])) {
             $currentLeadCounts[$userId] ?? 0,
             $periodLeadCounts[$userId] ?? 0,
             !empty($exportUser['created_at']) ? date('Y-m-d', strtotime((string)$exportUser['created_at'])) : '',
+            (string)($exportUser['signup_ip'] ?? ''),
             !empty($exportUser['last_login']) ? date('Y-m-d H:i:s', strtotime((string)$exportUser['last_login'])) : '',
+            (string)($exportUser['last_login_ip'] ?? ''),
         ]);
     }
 
@@ -278,7 +283,9 @@ require __DIR__ . '/includes/header.php';
                     <th>Status</th>
                     <th>Leads</th>
                     <th>Joined</th>
+                    <th>Signup IP</th>
                     <th>Last Login</th>
+                    <th>Last Login IP</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -337,7 +344,9 @@ require __DIR__ . '/includes/header.php';
                         <?php endif; ?>
                     </td>
                     <td class="small text-muted"><?= $u['created_at'] ? date('d M Y', strtotime($u['created_at'])) : '—' ?></td>
+                    <td class="small text-muted"><?= !empty($u['signup_ip']) ? e((string)$u['signup_ip']) : '—' ?></td>
                     <td class="small text-muted"><?= $u['last_login'] ? date('d M Y', strtotime($u['last_login'])) : 'Never' ?></td>
+                    <td class="small text-muted"><?= !empty($u['last_login_ip']) ? e((string)$u['last_login_ip']) : '—' ?></td>
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
                             <a href="/admin/user-form.php?id=<?= (int)$u['id'] ?>"
@@ -356,7 +365,7 @@ require __DIR__ . '/includes/header.php';
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($users)): ?>
-                <tr><td colspan="11" class="text-center py-4 text-muted">No users found.</td></tr>
+                <tr><td colspan="13" class="text-center py-4 text-muted">No users found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

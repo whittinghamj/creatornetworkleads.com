@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $db   = getDB();
+        ensureUserIpTrackingSchema($db);
+
         $stmt = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
         $stmt->execute([$fields['email']]);
         if ($stmt->fetch()) {
@@ -46,9 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $db = getDB();
+        ensureUserIpTrackingSchema($db);
+        ensureUserIpAuditSchema($db);
+        $signupIp = getClientIpAddress();
+
         $stmt = $db->prepare(
-            'INSERT INTO users (name, email, password, company, phone, status, role)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO users (name, email, password, company, phone, signup_ip, status, role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $fields['name'],
@@ -56,9 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             password_hash($password, PASSWORD_DEFAULT),
             $fields['company'] ?: null,
             $fields['phone']   ?: null,
+            $signupIp !== '' ? $signupIp : null,
             'pending',
             'customer',
         ]);
+        logUserIpAudit($db, (int)$db->lastInsertId(), 'signup', $signupIp);
 
         flash('Your account has been created and is pending approval. We\'ll be in touch shortly!', 'success');
         header('Location: /login.php');
