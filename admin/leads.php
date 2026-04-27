@@ -16,7 +16,7 @@ $typeF   = getInt('type');
 $statusF = getStr('status');
 $customerStatusF = getStr('customer_status');
 $custF   = getInt('customer');
-$filter  = getStr('filter'); // 'unassigned' or 'assigned'
+$filter  = getStr('filter'); // 'unassigned', 'assigned', or 'scraped'
 
 // Build WHERE
 $where  = ['1=1'];
@@ -50,6 +50,8 @@ if ($custF > 0) {
     $where[] = 'c.assigned_customer IS NULL';
 } elseif ($filter === 'assigned') {
     $where[] = 'c.assigned_customer IS NOT NULL';
+} elseif ($filter === 'scraped') {
+    $where[] = "LOWER(COALESCE(c.backstage_checked, '')) = 'yes'";
 }
 
 $whereStr = 'WHERE ' . implode(' AND ', $where);
@@ -116,6 +118,7 @@ $customers    = $db->query("SELECT id, name, email FROM users WHERE role='custom
 $filterLabel = match(true) {
     $filter === 'unassigned' => 'Unassigned Leads',
     $filter === 'assigned'   => 'Assigned Leads',
+    $filter === 'scraped'    => 'Scraped Leads',
     $custF > 0               => 'Leads for Customer',
     default                  => 'All Creator Leads',
 };
@@ -135,6 +138,7 @@ require __DIR__ . '/includes/header.php';
         <a href="/admin/leads.php" class="btn btn-sm btn-outline-secondary <?= $filter === '' && $custF === 0 ? 'active' : '' ?>">All</a>
         <a href="/admin/leads.php?filter=unassigned" class="btn btn-sm btn-outline-primary <?= $filter === 'unassigned' ? 'active' : '' ?>">Unassigned</a>
         <a href="/admin/leads.php?filter=assigned"   class="btn btn-sm btn-outline-success <?= $filter === 'assigned'   ? 'active' : '' ?>">Assigned</a>
+        <a href="/admin/leads.php?filter=scraped"    class="btn btn-sm btn-outline-info <?= $filter === 'scraped'    ? 'active' : '' ?>">Scraped</a>
     </div>
 </div>
 
