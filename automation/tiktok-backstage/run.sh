@@ -248,6 +248,8 @@ while [[ "${i}" -le "${LOOPS}" ]]; do
   export TT_BACKSTAGE_EMAIL="${ACCOUNT_EMAILS[account_index]}"
   export TT_BACKSTAGE_PASSWORD="${ACCOUNT_PASSWORDS[account_index]}"
 
+  echo "[run.sh] Using backstage account: ${TT_BACKSTAGE_EMAIL}"
+
   mark_account_timestamp "${account_id}" "last_used_at"
 
   echo "[run.sh] Loop ${i} of ${LOOPS} — starting scrape.js …"
