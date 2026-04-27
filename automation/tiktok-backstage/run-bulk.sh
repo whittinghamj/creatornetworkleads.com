@@ -84,7 +84,8 @@ mark_account_timestamp() {
       ;;
   esac
 
-  ACCOUNT_ID="${account_id}" TRACK_COLUMN="${column_name}" ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE' >/dev/null 2>&1 || true
+    cd "${ROOT_DIR}"
+    ACCOUNT_ID="${account_id}" TRACK_COLUMN="${column_name}" ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE' >/dev/null 2>&1 || true
 const mysql = require('mysql2/promise');
 
 function clean(v) {
@@ -127,7 +128,8 @@ load_accounts() {
     # Pull active backstage logins from DB first.
     local db_rows
     db_rows="$({
-      ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE'
+        cd "${ROOT_DIR}"
+        ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE'
 const mysql = require('mysql2/promise');
 
 function clean(v) {

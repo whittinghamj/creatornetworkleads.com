@@ -67,6 +67,7 @@ load_accounts_from_db() {
 
   local db_rows
   db_rows="$({
+    cd "${ROOT_DIR}"
     ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE'
 const mysql = require('mysql2/promise');
 
@@ -180,7 +181,9 @@ mark_account_timestamp() {
       ;;
   esac
 
-  ACCOUNT_ID="${account_id}" TRACK_COLUMN="${column_name}" ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE' >/dev/null 2>&1 || true
+  (
+    cd "${ROOT_DIR}"
+    ACCOUNT_ID="${account_id}" TRACK_COLUMN="${column_name}" ACCOUNTS_TABLE="${ACCOUNTS_TABLE}" node <<'NODE'
 const mysql = require('mysql2/promise');
 
 function clean(v) {
@@ -214,6 +217,7 @@ function clean(v) {
   // Ignore tracking failures to avoid interrupting scrape runs.
 });
 NODE
+  ) >/dev/null 2>&1 || true
 }
 
 if ! [[ "${LOOPS}" =~ ^[0-9]+$ ]] || [[ "${LOOPS}" -lt 1 ]]; then
