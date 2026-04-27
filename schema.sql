@@ -82,6 +82,23 @@ CREATE TABLE IF NOT EXISTS `user_ip_audit` (
   KEY `idx_user_ip_audit_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- TikTok Backstage login account pool (used by automation account rotation)
+CREATE TABLE IF NOT EXISTS `backstage_accounts` (
+  `id`          int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`  datetime         DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  datetime         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `email`       varchar(255)     NOT NULL,
+  `password`    varchar(255)     NOT NULL,
+  `label`       varchar(100)     DEFAULT NULL,
+  `is_active`   tinyint(1)       NOT NULL DEFAULT 1,
+  `last_used_at` datetime         DEFAULT NULL,
+  `last_success_at` datetime      DEFAULT NULL,
+  `last_failure_at` datetime      DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_backstage_accounts_email` (`email`),
+  KEY `idx_backstage_accounts_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- ============================================================
 -- Initial admin account
 -- Run setup.php to create the first admin interactively, OR

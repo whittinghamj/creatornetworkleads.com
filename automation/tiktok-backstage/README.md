@@ -58,6 +58,52 @@ printf "jamiewhittinghamofficial\n" > input.txt
 ./run.sh
 ```
 
+For bulk checking with account rotation (random account each batch):
+
+```bash
+cd /path/to/socialflame.live/automation/tiktok-backstage
+./run-bulk.sh 20
+```
+
+`run-bulk.sh` runs one `scrape.js` batch per loop (default `BATCH_SIZE=30`),
+and picks a random login account each loop.
+
+Primary account source is MySQL table `backstage_accounts`:
+
+```sql
+CREATE TABLE IF NOT EXISTS backstage_accounts (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	email varchar(255) NOT NULL,
+	password varchar(255) NOT NULL,
+	label varchar(100) DEFAULT NULL,
+	is_active tinyint(1) NOT NULL DEFAULT 1,
+	PRIMARY KEY (id),
+	UNIQUE KEY uq_backstage_accounts_email (email)
+);
+
+INSERT INTO backstage_accounts (email, password, label, is_active)
+VALUES
+	('first@example.com', 'first-password', 'Account 1', 1),
+	('second@example.com', 'second-password', 'Account 2', 1);
+```
+
+The script uses DB credentials from `.env` (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`) and can use a custom table name with `TT_BACKSTAGE_ACCOUNTS_TABLE`.
+
+If DB accounts are unavailable, it falls back to `.env` login entries (legacy):
+
+```bash
+TT_BACKSTAGE_EMAIL_1=first@example.com
+TT_BACKSTAGE_PASSWORD_1=first-password
+TT_BACKSTAGE_EMAIL_2=second@example.com
+TT_BACKSTAGE_PASSWORD_2=second-password
+```
+
+or a single semicolon-separated variable:
+
+```bash
+TT_BACKSTAGE_ACCOUNTS=first@example.com:first-password;second@example.com:second-password
+```
+
 Use `input.txt` for batch lookups:
 
 ```text

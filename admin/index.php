@@ -177,6 +177,9 @@ require __DIR__ . '/includes/header.php';
                     <a href="/admin/daily-assignments.php" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-calendar-check me-1"></i>Run Daily Assignments
                     </a>
+                    <a href="/admin/backstage-accounts.php" class="btn btn-sm btn-outline-dark">
+                        <i class="bi bi-shield-lock me-1"></i>Backstage Accounts
+                    </a>
                 </div>
             </div>
         </div>

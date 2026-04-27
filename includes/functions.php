@@ -432,6 +432,72 @@ function ensureMessageTemplatesSchema(PDO $db): void
     $done = true;
 }
 
+function ensureBackstageAccountsSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS backstage_accounts (
+            id          int(11) unsigned NOT NULL AUTO_INCREMENT,
+            created_at  datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at  datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            email       varchar(255) NOT NULL,
+            password    varchar(255) NOT NULL,
+            label       varchar(100) DEFAULT NULL,
+            is_active   tinyint(1) NOT NULL DEFAULT 1,
+            last_used_at datetime DEFAULT NULL,
+            last_success_at datetime DEFAULT NULL,
+            last_failure_at datetime DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_backstage_accounts_email (email),
+            KEY idx_backstage_accounts_active (is_active)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $colStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+
+    $colStmt->execute(['backstage_accounts', 'label']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE backstage_accounts ADD COLUMN label varchar(100) DEFAULT NULL AFTER password');
+    }
+
+    $colStmt->execute(['backstage_accounts', 'is_active']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE backstage_accounts ADD COLUMN is_active tinyint(1) NOT NULL DEFAULT 1 AFTER label');
+    }
+
+    $colStmt->execute(['backstage_accounts', 'last_used_at']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE backstage_accounts ADD COLUMN last_used_at datetime DEFAULT NULL AFTER is_active');
+    }
+
+    $colStmt->execute(['backstage_accounts', 'last_success_at']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE backstage_accounts ADD COLUMN last_success_at datetime DEFAULT NULL AFTER last_used_at');
+    }
+
+    $colStmt->execute(['backstage_accounts', 'last_failure_at']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE backstage_accounts ADD COLUMN last_failure_at datetime DEFAULT NULL AFTER last_success_at');
+    }
+
+    $idxStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+    );
+
+    $idxStmt->execute(['backstage_accounts', 'idx_backstage_accounts_active']);
+    if ((int)$idxStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE backstage_accounts ADD INDEX idx_backstage_accounts_active (is_active)');
+    }
+
+    $done = true;
+}
+
 function messageTemplateTagsForUser(array $user): array
 {
     $fullName = trim((string)($user['name'] ?? ''));

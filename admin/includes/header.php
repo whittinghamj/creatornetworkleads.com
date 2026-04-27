@@ -64,6 +64,9 @@ if (!isset($activeNav))  { $activeNav  = ''; }
             <a href="/admin/daily-assignments.php" class="nav-link <?= $activeNav === 'daily-assignments' ? 'active' : '' ?>">
                 <i class="bi bi-calendar-check-fill"></i> Daily Assignments
             </a>
+            <a href="/admin/backstage-accounts.php" class="nav-link <?= in_array($activeNav, ['backstage-accounts', 'backstage-account-add'], true) ? 'active' : '' ?>">
+                <i class="bi bi-shield-lock-fill"></i> Backstage Accounts
+            </a>
             <a href="/dashboard.php" class="nav-link">
                 <i class="bi bi-house-fill"></i> Customer View
             </a>
