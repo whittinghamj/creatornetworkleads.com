@@ -245,6 +245,42 @@ NODE
   fi
 }
 
+print_creator_results() {
+  local results
+  results="$({
+    cd "${ROOT_DIR}"
+    node <<'NODE'
+const fs = require('fs');
+
+try {
+  const raw = fs.readFileSync('output/latest.json', 'utf8');
+  const data = JSON.parse(raw);
+  const creators = Array.isArray(data?.creatorLookup?.results) ? data.creatorLookup.results : [];
+  
+  for (const creator of creators) {
+    const username = String(creator.username || '').trim();
+    const status = String(creator.status || '').trim();
+    
+    if (!username) continue;
+    
+    const isAvailable = status === 'Available';
+    const colorCode = isAvailable ? '\033[32m' : '\033[31m';
+    const resetCode = '\033[0m';
+    const symbol = isAvailable ? '✓' : '✗';
+    
+    console.log(`@${username} ${colorCode}${symbol} ${status}${resetCode}`);
+  }
+} catch {
+  // Ignore parse/read issues.
+}
+NODE
+  } 2>/dev/null || true)"
+
+  if [[ -n "${results}" ]]; then
+    echo "${results}"
+  fi
+}
+
 print_failure_summary() {
   local summary
   summary="$({
@@ -307,6 +343,7 @@ while [[ "${i}" -le "${LOOPS}" ]]; do
   if node scrape.js >/dev/null 2>&1; then
     mark_account_timestamp "${account_id}" "last_success_at"
     print_success_summary
+    print_creator_results
     consecutive_failures=0
 
     if [[ "${i}" -lt "${LOOPS}" ]]; then
