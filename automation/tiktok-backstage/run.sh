@@ -3,7 +3,13 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ROOT_DIR}/.env"
-CLI_USERNAME="${1:-}"
+LOOPS="${1:-1}"
+CLI_USERNAME="${2:-}"
+
+if ! [[ "${LOOPS}" =~ ^[0-9]+$ ]] || [[ "${LOOPS}" -lt 1 ]]; then
+  echo "Usage: ./run.sh [loops] [username]  (loops must be a positive integer, defaults to 1)" >&2
+  exit 1
+fi
 
 if [[ -f "${ENV_FILE}" ]]; then
   while IFS= read -r line || [[ -n "${line}" ]]; do
@@ -37,4 +43,14 @@ if [[ -n "${CLI_USERNAME}" ]]; then
 fi
 
 cd "${ROOT_DIR}"
-exec node scrape.js
+
+for (( i = 1; i <= LOOPS; i++ )); do
+  echo "[run.sh] Loop ${i} of ${LOOPS} — starting scrape.js …"
+  node scrape.js
+  if [[ "${i}" -lt "${LOOPS}" ]]; then
+    echo "[run.sh] Waiting 5 seconds before next run …"
+    sleep 5
+  fi
+done
+
+echo "[run.sh] All ${LOOPS} loop(s) complete."
