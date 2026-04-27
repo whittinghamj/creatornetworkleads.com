@@ -220,6 +220,56 @@ NODE
   ) >/dev/null 2>&1 || true
 }
 
+print_success_summary() {
+  local summary
+  summary="$({
+    cd "${ROOT_DIR}"
+    node <<'NODE'
+const fs = require('fs');
+
+try {
+  const raw = fs.readFileSync('output/latest.json', 'utf8');
+  const data = JSON.parse(raw);
+  const count = Array.isArray(data?.creatorLookup?.results) ? data.creatorLookup.results.length : 0;
+  console.log(`scrape.js completed successfully (${count} creator(s) checked).`);
+} catch {
+  console.log('scrape.js completed successfully.');
+}
+NODE
+  } 2>/dev/null || true)"
+
+  if [[ -n "${summary}" ]]; then
+    echo "[run.sh] ${summary}"
+  else
+    echo "[run.sh] scrape.js completed successfully."
+  fi
+}
+
+print_failure_summary() {
+  local summary
+  summary="$({
+    cd "${ROOT_DIR}"
+    node <<'NODE'
+const fs = require('fs');
+
+try {
+  const raw = fs.readFileSync('output/latest-error.json', 'utf8');
+  const data = JSON.parse(raw);
+  const message = String(data?.message || '').trim();
+  if (message) {
+    console.log(`scrape.js failed: ${message}`);
+  }
+} catch {
+  // Ignore parse/read issues.
+}
+NODE
+  } 2>/dev/null || true)"
+
+  if [[ -n "${summary}" ]]; then
+    echo "[run.sh] ${summary}" >&2
+  fi
+}
+
 if ! [[ "${LOOPS}" =~ ^[0-9]+$ ]] || [[ "${LOOPS}" -lt 1 ]]; then
   echo "Usage: ./run.sh [loops] [username]  (loops must be a positive integer, defaults to 1)" >&2
   exit 1
@@ -254,8 +304,9 @@ while [[ "${i}" -le "${LOOPS}" ]]; do
 
   echo "[run.sh] Loop ${i} of ${LOOPS} — starting scrape.js …"
 
-  if node scrape.js; then
+  if node scrape.js >/dev/null 2>&1; then
     mark_account_timestamp "${account_id}" "last_success_at"
+    print_success_summary
     consecutive_failures=0
 
     if [[ "${i}" -lt "${LOOPS}" ]]; then
@@ -269,6 +320,7 @@ while [[ "${i}" -le "${LOOPS}" ]]; do
 
   consecutive_failures=$((consecutive_failures + 1))
   mark_account_timestamp "${account_id}" "last_failure_at"
+  print_failure_summary
   echo "[run.sh] scrape.js failed (${consecutive_failures}/${MAX_CONSECUTIVE_FAILURES} consecutive failures)." >&2
 
   if [[ "${consecutive_failures}" -ge "${MAX_CONSECUTIVE_FAILURES}" ]]; then
