@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ROOT_DIR}/.env"
+ROOT_ENV_FILE="${ROOT_DIR}/../../.env"
 LOOPS="${1:-1}"
 CLI_USERNAME="${2:-}"
 RETRY_DELAY_SECONDS="${RETRY_DELAY_SECONDS:-60}"
@@ -14,7 +15,14 @@ declare -a ACCOUNT_EMAILS=()
 declare -a ACCOUNT_PASSWORDS=()
 
 load_env() {
-  if [[ -f "${ENV_FILE}" ]]; then
+  local source_file=""
+  if [[ -f "${ROOT_ENV_FILE}" ]]; then
+    source_file="${ROOT_ENV_FILE}"
+  elif [[ -f "${ENV_FILE}" ]]; then
+    source_file="${ENV_FILE}"
+  fi
+
+  if [[ -n "${source_file}" ]]; then
     while IFS= read -r line || [[ -n "${line}" ]]; do
       line="${line%$'\r'}"
 
@@ -33,7 +41,7 @@ load_env() {
       key="${key%"${key##*[![:space:]]}"}"
 
       export "${key}=${value}"
-    done < "${ENV_FILE}"
+    done < "${source_file}"
   fi
 }
 
@@ -81,9 +89,24 @@ function clean(v) {
   });
 
   try {
-    const [rows] = await db.query(
-      `SELECT id, email, password FROM ${table} WHERE is_active = 1 AND email IS NOT NULL AND email != '' AND password IS NOT NULL AND password != ''`
-    );
+    const [colRows] = await db.query(`SHOW COLUMNS FROM ${table} LIKE 'is_active'`);
+    const hasIsActive = Array.isArray(colRows) && colRows.length > 0;
+
+    const whereParts = [
+      "email IS NOT NULL",
+      "email != ''",
+      "password IS NOT NULL",
+      "password != ''",
+    ];
+
+    if (hasIsActive) {
+      whereParts.push(
+        "LOWER(TRIM(CAST(COALESCE(is_active, '1') AS CHAR))) IN ('1', 'true', 'yes', 'active')"
+      );
+    }
+
+    const sql = `SELECT id, email, password FROM ${table} WHERE ${whereParts.join(' AND ')}`;
+    const [rows] = await db.query(sql);
 
     for (const row of rows) {
       const id = Number.parseInt(clean(row.id), 10);
@@ -94,14 +117,18 @@ function clean(v) {
       }
       console.log(`${id}\t${email}\t${password}`);
     }
+  } catch (error) {
+    console.error(`Failed loading backstage accounts from table '${table}': ${error.message}`);
+    process.exit(1);
   } finally {
     await db.end();
   }
-})().catch(() => {
+})().catch((error) => {
+  console.error(error?.message || String(error));
   process.exit(1);
 });
 NODE
-  } 2>/dev/null || true)"
+  })"
 
   if [[ -z "${db_rows}" ]]; then
     echo "No active backstage accounts found in DB table '${ACCOUNTS_TABLE}'." >&2
