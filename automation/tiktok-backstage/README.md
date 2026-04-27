@@ -44,10 +44,12 @@ npm run install:browsers
 
 ```bash
 cd /path/to/socialflame.live/automation/tiktok-backstage
-export TT_BACKSTAGE_EMAIL='jamie@tiktokcreatornetwork.com'
-export TT_BACKSTAGE_PASSWORD='admin1372Dextor!#&@'
-node scrape.js
+./run.sh 1
 ```
+
+`run.sh` now reads login credentials from the database table `backstage_accounts` (active rows only), using DB connection settings from `.env`.
+
+To run `node scrape.js` directly (without `run.sh`), you can still provide `TT_BACKSTAGE_EMAIL` and `TT_BACKSTAGE_PASSWORD` in your shell.
 
 Or create a local `.env` from `.env.example` and run:
 

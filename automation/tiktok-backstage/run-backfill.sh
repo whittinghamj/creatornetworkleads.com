@@ -124,11 +124,6 @@ NODE
 cd "${ROOT_DIR}"
 load_env
 
-if [[ -z "${TT_BACKSTAGE_EMAIL:-}" || -z "${TT_BACKSTAGE_PASSWORD:-}" ]]; then
-  echo "Set TT_BACKSTAGE_EMAIL and TT_BACKSTAGE_PASSWORD in .env or shell environment." >&2
-  exit 1
-fi
-
 export BATCH_SIZE
 
 echo "Backfill starting with batch size ${BATCH_SIZE}."
