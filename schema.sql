@@ -32,13 +32,83 @@ CREATE TABLE IF NOT EXISTS `packages` (
   `description`      text             DEFAULT NULL,
   `leads_per_day`    int(11)          NOT NULL DEFAULT 0,
   `price_per_month`  decimal(10,2)    NOT NULL DEFAULT 0.00,
+  `paypal_plan_id`   varchar(120)     DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE `packages`
+  ADD KEY `idx_packages_paypal_plan_id` (`paypal_plan_id`);
 
 -- Add package relation on users (run once)
 ALTER TABLE `users`
   ADD COLUMN `package_id` int(11) unsigned DEFAULT NULL,
   ADD KEY `idx_users_package_id` (`package_id`);
+
+ALTER TABLE `users`
+  ADD COLUMN `paypal_subscription_id` varchar(64) DEFAULT NULL,
+  ADD COLUMN `payment_exempt` tinyint(1) NOT NULL DEFAULT 0,
+  ADD COLUMN `subscription_status` varchar(32) NOT NULL DEFAULT 'none',
+  ADD COLUMN `subscription_package_id` int(11) unsigned DEFAULT NULL,
+  ADD COLUMN `subscription_started_at` datetime DEFAULT NULL,
+  ADD COLUMN `subscription_ends_at` datetime DEFAULT NULL,
+  ADD COLUMN `subscription_updated_at` datetime DEFAULT NULL,
+  ADD KEY `idx_users_paypal_subscription_id` (`paypal_subscription_id`),
+  ADD KEY `idx_users_payment_exempt` (`payment_exempt`),
+  ADD KEY `idx_users_subscription_status` (`subscription_status`);
+
+CREATE TABLE IF NOT EXISTS `paypal_subscriptions` (
+  `id`                     int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`             datetime         DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`             datetime         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `user_id`                int(11) unsigned NOT NULL,
+  `package_id`             int(11) unsigned DEFAULT NULL,
+  `paypal_subscription_id` varchar(64)      NOT NULL,
+  `paypal_plan_id`         varchar(120)     DEFAULT NULL,
+  `status`                 varchar(32)      NOT NULL DEFAULT 'pending',
+  `subscriber_email`       varchar(255)     DEFAULT NULL,
+  `next_billing_time`      datetime         DEFAULT NULL,
+  `raw_payload`            longtext         DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_paypal_subscription_id` (`paypal_subscription_id`),
+  KEY `idx_ps_user_id` (`user_id`),
+  KEY `idx_ps_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `paypal_payments` (
+  `id`                     int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`             datetime         DEFAULT CURRENT_TIMESTAMP,
+  `user_id`                int(11) unsigned DEFAULT NULL,
+  `paypal_subscription_id` varchar(64)      DEFAULT NULL,
+  `paypal_transaction_id`  varchar(64)      NOT NULL,
+  `status`                 varchar(32)      NOT NULL,
+  `amount`                 decimal(10,2)    DEFAULT NULL,
+  `currency_code`          varchar(10)      DEFAULT NULL,
+  `payer_email`            varchar(255)     DEFAULT NULL,
+  `paid_at`                datetime         DEFAULT NULL,
+  `raw_payload`            longtext         DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_paypal_transaction_id` (`paypal_transaction_id`),
+  KEY `idx_pp_user_id` (`user_id`),
+  KEY `idx_pp_subscription_id` (`paypal_subscription_id`),
+  KEY `idx_pp_status` (`status`),
+  KEY `idx_pp_paid_at` (`paid_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `paypal_webhook_events` (
+  `id`                   int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created_at`           datetime         DEFAULT CURRENT_TIMESTAMP,
+  `paypal_event_id`      varchar(64)      NOT NULL,
+  `event_type`           varchar(80)      NOT NULL,
+  `resource_type`        varchar(80)      DEFAULT NULL,
+  `verification_status`  varchar(20)      DEFAULT NULL,
+  `processing_status`    varchar(20)      NOT NULL DEFAULT 'received',
+  `error_message`        varchar(500)     DEFAULT NULL,
+  `raw_payload`          longtext         DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pwe_event_id` (`paypal_event_id`),
+  KEY `idx_pwe_event_type` (`event_type`),
+  KEY `idx_pwe_processing_status` (`processing_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tracks how many leads were auto-assigned per customer each day
 CREATE TABLE IF NOT EXISTS `customer_daily_lead_assignments` (

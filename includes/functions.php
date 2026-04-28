@@ -344,6 +344,16 @@ function ensurePackagesSchema(PDO $db): void
         $db->exec('ALTER TABLE users ADD INDEX idx_users_package_id (package_id)');
     }
 
+    $colStmt->execute(['packages', 'paypal_plan_id']);
+    if ((int)$colStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE packages ADD COLUMN paypal_plan_id varchar(120) DEFAULT NULL AFTER price_per_month');
+    }
+
+    $idxStmt->execute(['packages', 'idx_packages_paypal_plan_id']);
+    if ((int)$idxStmt->fetchColumn() === 0) {
+        $db->exec('ALTER TABLE packages ADD INDEX idx_packages_paypal_plan_id (paypal_plan_id)');
+    }
+
     $db->exec(
         "CREATE TABLE IF NOT EXISTS customer_daily_lead_assignments (
             id              int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -355,6 +365,115 @@ function ensurePackagesSchema(PDO $db): void
             PRIMARY KEY (id),
             UNIQUE KEY uq_user_day (user_id, assign_date),
             KEY idx_assign_date (assign_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $done = true;
+}
+
+function ensureBillingSchema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    ensurePackagesSchema($db);
+
+    $colStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+
+    $columnsToAdd = [
+        ['paypal_subscription_id', 'varchar(64) DEFAULT NULL AFTER package_id'],
+        ['payment_exempt', 'tinyint(1) NOT NULL DEFAULT 0 AFTER paypal_subscription_id'],
+        ['subscription_status', "varchar(32) NOT NULL DEFAULT 'none' AFTER paypal_subscription_id"],
+        ['subscription_package_id', 'int(11) unsigned DEFAULT NULL AFTER subscription_status'],
+        ['subscription_started_at', 'datetime DEFAULT NULL AFTER subscription_package_id'],
+        ['subscription_ends_at', 'datetime DEFAULT NULL AFTER subscription_started_at'],
+        ['subscription_updated_at', 'datetime DEFAULT NULL AFTER subscription_ends_at'],
+    ];
+
+    foreach ($columnsToAdd as $column) {
+        $colStmt->execute(['users', $column[0]]);
+        if ((int)$colStmt->fetchColumn() === 0) {
+            $db->exec('ALTER TABLE users ADD COLUMN ' . $column[0] . ' ' . $column[1]);
+        }
+    }
+
+    $idxStmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+    );
+
+    $userIndexes = [
+        ['idx_users_paypal_subscription_id', 'ALTER TABLE users ADD INDEX idx_users_paypal_subscription_id (paypal_subscription_id)'],
+        ['idx_users_payment_exempt', 'ALTER TABLE users ADD INDEX idx_users_payment_exempt (payment_exempt)'],
+        ['idx_users_subscription_status', 'ALTER TABLE users ADD INDEX idx_users_subscription_status (subscription_status)'],
+    ];
+    foreach ($userIndexes as $index) {
+        $idxStmt->execute(['users', $index[0]]);
+        if ((int)$idxStmt->fetchColumn() === 0) {
+            $db->exec($index[1]);
+        }
+    }
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS paypal_subscriptions (
+            id                    int(11) unsigned NOT NULL AUTO_INCREMENT,
+            created_at            datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at            datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            user_id               int(11) unsigned NOT NULL,
+            package_id            int(11) unsigned DEFAULT NULL,
+            paypal_subscription_id varchar(64) NOT NULL,
+            paypal_plan_id        varchar(120) DEFAULT NULL,
+            status                varchar(32) NOT NULL DEFAULT 'pending',
+            subscriber_email      varchar(255) DEFAULT NULL,
+            next_billing_time     datetime DEFAULT NULL,
+            raw_payload           longtext DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_paypal_subscription_id (paypal_subscription_id),
+            KEY idx_ps_user_id (user_id),
+            KEY idx_ps_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS paypal_payments (
+            id                    int(11) unsigned NOT NULL AUTO_INCREMENT,
+            created_at            datetime DEFAULT CURRENT_TIMESTAMP,
+            user_id               int(11) unsigned DEFAULT NULL,
+            paypal_subscription_id varchar(64) DEFAULT NULL,
+            paypal_transaction_id varchar(64) NOT NULL,
+            status                varchar(32) NOT NULL,
+            amount                decimal(10,2) DEFAULT NULL,
+            currency_code         varchar(10) DEFAULT NULL,
+            payer_email           varchar(255) DEFAULT NULL,
+            paid_at               datetime DEFAULT NULL,
+            raw_payload           longtext DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_paypal_transaction_id (paypal_transaction_id),
+            KEY idx_pp_user_id (user_id),
+            KEY idx_pp_subscription_id (paypal_subscription_id),
+            KEY idx_pp_status (status),
+            KEY idx_pp_paid_at (paid_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS paypal_webhook_events (
+            id                    int(11) unsigned NOT NULL AUTO_INCREMENT,
+            created_at            datetime DEFAULT CURRENT_TIMESTAMP,
+            paypal_event_id       varchar(64) NOT NULL,
+            event_type            varchar(80) NOT NULL,
+            resource_type         varchar(80) DEFAULT NULL,
+            verification_status   varchar(20) DEFAULT NULL,
+            processing_status     varchar(20) NOT NULL DEFAULT 'received',
+            error_message         varchar(500) DEFAULT NULL,
+            raw_payload           longtext DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_pwe_event_id (paypal_event_id),
+            KEY idx_pwe_event_type (event_type),
+            KEY idx_pwe_processing_status (processing_status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
     );
 
@@ -549,11 +668,12 @@ function packageNameById(array $packages, ?int $packageId): string
 function assignAvailableLeadsForCustomer(PDO $db, int $customerId): array
 {
     ensurePackagesSchema($db);
+    ensureBillingSchema($db);
     ensureCreatorsLeadTrackingSchema($db);
 
     $today = date('Y-m-d');
     $userStmt = $db->prepare(
-        'SELECT u.id, u.name, u.role, u.status, u.package_id, p.name AS package_name, p.leads_per_day
+        'SELECT u.id, u.name, u.role, u.status, u.package_id, u.payment_exempt, u.subscription_status, p.name AS package_name, p.leads_per_day, p.price_per_month
          FROM users u
          LEFT JOIN packages p ON p.id = u.package_id
          WHERE u.id = ?
@@ -564,6 +684,12 @@ function assignAvailableLeadsForCustomer(PDO $db, int $customerId): array
 
     if (!$user || $user['role'] !== 'customer' || $user['status'] !== 'active') {
         return ['assigned' => 0, 'remaining' => 0, 'reason' => 'User is not an active customer.'];
+    }
+
+    $isPaymentExempt = (int)($user['payment_exempt'] ?? 0) === 1;
+    $isPaidPackage = (float)($user['price_per_month'] ?? 0) > 0;
+    if (!$isPaymentExempt && $isPaidPackage && strtolower((string)($user['subscription_status'] ?? 'none')) !== 'active') {
+        return ['assigned' => 0, 'remaining' => 0, 'reason' => 'Customer does not have an active paid subscription.'];
     }
 
     $dailyLimit = (int)($user['leads_per_day'] ?? 0);
@@ -633,15 +759,22 @@ function assignAvailableLeadsForCustomer(PDO $db, int $customerId): array
 
 function assignAvailableLeadsForAllCustomers(PDO $db): array
 {
-    ensurePackagesSchema($db);
+    ensureBillingSchema($db);
 
     $customers = $db->query(
-        "SELECT id, name
-         FROM users
-         WHERE role = 'customer'
-           AND status = 'active'
-           AND package_id IS NOT NULL
-         ORDER BY id ASC"
+                "SELECT u.id, u.name
+                 FROM users u
+                 LEFT JOIN packages p ON p.id = u.package_id
+                 WHERE u.role = 'customer'
+                     AND u.status = 'active'
+                     AND u.package_id IS NOT NULL
+                     AND (
+                             COALESCE(u.payment_exempt, 0) = 1
+                             OR
+                             COALESCE(p.price_per_month, 0) <= 0
+                             OR u.subscription_status = 'active'
+                     )
+                 ORDER BY u.id ASC"
     )->fetchAll();
 
     $results = [];

@@ -8,6 +8,7 @@ requireAdmin();
 
 $db    = getDB();
 ensurePackagesSchema($db);
+ensureBillingSchema($db);
 ensureUserIpTrackingSchema($db);
 ensureUserIpAuditSchema($db);
 $id    = getInt('id');
@@ -26,6 +27,7 @@ $user = [
     'status'  => 'active',
     'notes'   => '',
     'package_id' => null,
+    'payment_exempt' => 0,
 ];
 
 if (!$isNew) {
@@ -77,11 +79,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user['status']  = in_array(postStr('status'), ['active','inactive','pending']) ? postStr('status') : 'active';
     $user['notes']   = postStr('notes');
     $user['package_id'] = (int)postStr('package_id');
+    $user['payment_exempt'] = postStr('payment_exempt') === '1' ? 1 : 0;
     $password        = postStr('password');
     $passConfirm     = postStr('password_confirm');
 
     if ($user['role'] !== 'customer') {
         $user['package_id'] = 0;
+        $user['payment_exempt'] = 0;
     }
 
     if ($user['package_id'] > 0) {
@@ -120,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         if ($isNew) {
             $stmt = $db->prepare(
-                'INSERT INTO users (name, email, password, company, phone, role, status, notes, package_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO users (name, email, password, company, phone, role, status, notes, package_id, payment_exempt)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $user['name'],
@@ -133,12 +137,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user['status'],
                 $user['notes']   ?: null,
                 $user['package_id'] > 0 ? $user['package_id'] : null,
+                (int)$user['payment_exempt'],
             ]);
             flash('User ' . $user['name'] . ' created successfully.', 'success');
         } else {
             if ($password !== '') {
                 $stmt = $db->prepare(
-                    'UPDATE users SET name=?, email=?, password=?, company=?, phone=?, role=?, status=?, notes=?, package_id=? WHERE id=?'
+                    'UPDATE users SET name=?, email=?, password=?, company=?, phone=?, role=?, status=?, notes=?, package_id=?, payment_exempt=? WHERE id=?'
                 );
                 $stmt->execute([
                     $user['name'], $user['email'],
@@ -146,17 +151,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user['company'] ?: null, $user['phone'] ?: null,
                     $user['role'], $user['status'], $user['notes'] ?: null,
                     $user['package_id'] > 0 ? $user['package_id'] : null,
+                    (int)$user['payment_exempt'],
                     $id,
                 ]);
             } else {
                 $stmt = $db->prepare(
-                    'UPDATE users SET name=?, email=?, company=?, phone=?, role=?, status=?, notes=?, package_id=? WHERE id=?'
+                    'UPDATE users SET name=?, email=?, company=?, phone=?, role=?, status=?, notes=?, package_id=?, payment_exempt=? WHERE id=?'
                 );
                 $stmt->execute([
                     $user['name'], $user['email'],
                     $user['company'] ?: null, $user['phone'] ?: null,
                     $user['role'], $user['status'], $user['notes'] ?: null,
                     $user['package_id'] > 0 ? $user['package_id'] : null,
+                    (int)$user['payment_exempt'],
                     $id,
                 ]);
             }
@@ -244,6 +251,17 @@ require __DIR__ . '/includes/header.php';
                                 <?php endforeach; ?>
                             </select>
                             <div class="form-text">Used only for customer accounts.</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" role="switch" id="paymentExemptSwitch" name="payment_exempt" value="1" <?= (int)($user['payment_exempt'] ?? 0) === 1 ? 'checked' : '' ?> <?= $user['role'] !== 'customer' ? 'disabled' : '' ?>>
+                                <label class="form-check-label small" for="paymentExemptSwitch">
+                                    Payment Exempt (customer still receives daily leads even without an active paid subscription)
+                                </label>
+                                <?php if ($user['role'] !== 'customer'): ?>
+                                    <div class="form-text">Only available for customer accounts.</div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold">

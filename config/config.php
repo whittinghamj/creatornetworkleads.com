@@ -11,6 +11,54 @@ if (!defined('APP_NAME')) {
     define('CRON_ASSIGN_KEY', '');
 }
 
+if (!function_exists('configEnvValues')) {
+    function configEnvValues(): array
+    {
+        static $env = null;
+        if ($env !== null) {
+            return $env;
+        }
+
+        $env = [];
+        $candidates = [
+            __DIR__ . '/../.env',
+            __DIR__ . '/../automation/tiktok-backstage/.env',
+        ];
+
+        foreach ($candidates as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+
+            $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) {
+                    continue;
+                }
+                [$k, $v] = explode('=', $line, 2);
+                $env[trim($k)] = trim($v);
+            }
+            break;
+        }
+
+        return $env;
+    }
+}
+
+$configEnv = configEnvValues();
+
+if (!defined('PAYPAL_MODE')) {
+    define('PAYPAL_MODE', strtolower((string)($configEnv['PAYPAL_MODE'] ?? 'sandbox')) === 'live' ? 'live' : 'sandbox');
+    define('PAYPAL_CLIENT_ID', (string)($configEnv['PAYPAL_CLIENT_ID'] ?? ''));
+    define('PAYPAL_CLIENT_SECRET', (string)($configEnv['PAYPAL_CLIENT_SECRET'] ?? ''));
+    define('PAYPAL_WEBHOOK_ID', (string)($configEnv['PAYPAL_WEBHOOK_ID'] ?? ''));
+    define('PAYPAL_BILLING_EMAIL', (string)($configEnv['PAYPAL_BILLING_EMAIL'] ?? 'billing@genexnet.com'));
+    define('PAYPAL_RETURN_URL', (string)($configEnv['PAYPAL_RETURN_URL'] ?? rtrim(APP_URL, '/') . '/billing.php?paypal=success'));
+    define('PAYPAL_CANCEL_URL', (string)($configEnv['PAYPAL_CANCEL_URL'] ?? rtrim(APP_URL, '/') . '/billing.php?paypal=cancel'));
+}
+unset($configEnv);
+
 // Timezone
 date_default_timezone_set('UTC');
 

@@ -13,6 +13,12 @@ if (!$user) {
     exit;
 }
 
+$userPackageStmt = getDB()->prepare('SELECT package_id FROM users WHERE id = ? LIMIT 1');
+$userPackageStmt->execute([(int)$_SESSION['user_id']]);
+$userPackageId = (int)($userPackageStmt->fetchColumn() ?: 0);
+$user['package_id'] = $userPackageId;
+$showFreeTierUpgradeBanner = $userPackageId === 2;
+
 $db        = getDB();
 $userId    = (int)$_SESSION['user_id'];
 $perPage   = 24;
@@ -365,6 +371,22 @@ $pageTitle = 'My Leads';
 
     <?= flashHtml() ?>
 
+    <?php if ($showFreeTierUpgradeBanner): ?>
+        <div class="alert alert-warning border-0 shadow-sm d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4" role="alert" style="border-radius:12px">
+            <div>
+                <h6 class="fw-bold mb-1"><i class="bi bi-rocket-takeoff-fill me-1"></i>Grow Faster With a Paid Plan</h6>
+                <p class="mb-0 small">
+                    You are currently on the free tier. Upgrade to unlock more daily leads, reach more creators faster, and accelerate your acceptance pipeline.
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/billing.php" class="btn btn-danger btn-sm">
+                    <i class="bi bi-arrow-up-circle me-1"></i>Upgrade Subscription
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="row g-4">
         <div class="col-lg-3 col-xl-2">
             <div class="card border-0 shadow-sm dashboard-menu-card">
@@ -379,6 +401,9 @@ $pageTitle = 'My Leads';
                     </a>
                     <a href="/dashboard.php?view=account" class="dashboard-menu-link <?= $view === 'account' ? 'active' : '' ?>">
                         <span><i class="bi bi-person-gear me-2"></i>Edit Account</span>
+                    </a>
+                    <a href="/billing.php" class="dashboard-menu-link">
+                        <span><i class="bi bi-credit-card-2-front me-2"></i>Billing</span>
                     </a>
                 </div>
             </div>

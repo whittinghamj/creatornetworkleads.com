@@ -8,6 +8,7 @@ requireAdmin();
 
 $db      = getDB();
 ensurePackagesSchema($db);
+ensureBillingSchema($db);
 ensureUserIpTrackingSchema($db);
 $perPage = 20;
 $page    = getInt('page', 1);
@@ -66,6 +67,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'set_package'
             $db->prepare('UPDATE users SET package_id = NULL WHERE id = ?')->execute([$targetUserId]);
             flash('Package removed for ' . $targetUser['name'] . '.', 'success');
         }
+    }
+
+    header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/admin/users.php'));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && postStr('action') === 'toggle_payment_exempt') {
+    verifyCsrf();
+
+    $targetUserId = (int)postStr('user_id');
+    $newValue = postStr('payment_exempt') === '1' ? 1 : 0;
+
+    $usrStmt = $db->prepare('SELECT id, role, name FROM users WHERE id = ? LIMIT 1');
+    $usrStmt->execute([$targetUserId]);
+    $targetUser = $usrStmt->fetch();
+
+    if (!$targetUser) {
+        flash('User not found.', 'danger');
+    } elseif ($targetUser['role'] !== 'customer') {
+        flash('Payment exemption can only be applied to customer accounts.', 'danger');
+    } else {
+        $db->prepare('UPDATE users SET payment_exempt = ? WHERE id = ? LIMIT 1')->execute([$newValue, $targetUserId]);
+        flash(
+            $newValue === 1
+                ? 'Payment exemption enabled for ' . $targetUser['name'] . '.'
+                : 'Payment exemption removed for ' . $targetUser['name'] . '.',
+            'success'
+        );
     }
 
     header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/admin/users.php'));
@@ -142,6 +171,7 @@ if ($export !== '' && isset($exportWindows[$export])) {
         'Email',
         'Company',
         'Package',
+        'Payment Exempt',
         'Role',
         'Status',
         'Current Assigned Leads',
@@ -160,6 +190,7 @@ if ($export !== '' && isset($exportWindows[$export])) {
             (string)$exportUser['email'],
             (string)($exportUser['company'] ?? ''),
             (string)($exportUser['package_name'] ?? 'None'),
+            (int)($exportUser['payment_exempt'] ?? 0) === 1 ? 'Yes' : 'No',
             (string)$exportUser['role'],
             (string)$exportUser['status'],
             $currentLeadCounts[$userId] ?? 0,
@@ -281,6 +312,7 @@ require __DIR__ . '/includes/header.php';
                     <th>Package</th>
                     <th>Role</th>
                     <th>Status</th>
+                    <th>Exempt</th>
                     <th>Leads</th>
                     <th>Joined</th>
                     <th>Signup IP</th>
@@ -334,6 +366,24 @@ require __DIR__ . '/includes/header.php';
                     <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'dark' : 'secondary' ?>"><?= ucfirst(e($u['role'])) ?></span></td>
                     <td><?= statusBadge($u['status']) ?></td>
                     <td>
+                        <?php if ($u['role'] === 'customer'): ?>
+                            <form method="POST" action="/admin/users.php?search=<?= urlencode($search) ?>&role=<?= urlencode($role) ?>&status=<?= urlencode($status) ?>&page=<?= (int)$page ?>" class="d-inline-flex align-items-center gap-1">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="toggle_payment_exempt">
+                                <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                                <input type="hidden" name="payment_exempt" value="<?= (int)($u['payment_exempt'] ?? 0) === 1 ? '0' : '1' ?>">
+                                <span class="badge bg-<?= (int)($u['payment_exempt'] ?? 0) === 1 ? 'success' : 'secondary' ?>">
+                                    <?= (int)($u['payment_exempt'] ?? 0) === 1 ? 'Yes' : 'No' ?>
+                                </span>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Toggle exemption">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <span class="text-muted small">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
                         <?php $lc = $leadCounts[(int)$u['id']] ?? 0; ?>
                         <?php if ($lc > 0): ?>
                             <a href="/admin/leads.php?customer=<?= (int)$u['id'] ?>" class="badge bg-primary text-decoration-none">
@@ -365,7 +415,7 @@ require __DIR__ . '/includes/header.php';
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($users)): ?>
-                <tr><td colspan="13" class="text-center py-4 text-muted">No users found.</td></tr>
+                <tr><td colspan="14" class="text-center py-4 text-muted">No users found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

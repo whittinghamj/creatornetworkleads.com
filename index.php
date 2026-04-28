@@ -15,6 +15,7 @@ try {
     $db         = getDB();
     $totalLeads = (int)$db->query('SELECT COUNT(*) FROM creators')->fetchColumn();
     $totalRegions = (int)$db->query('SELECT COUNT(DISTINCT backstage_region) FROM creators WHERE backstage_region IS NOT NULL AND backstage_region != ""')->fetchColumn();
+    $pricingPackages = getPackages($db);
     // Grab up to 5 real creators with avatars for the hero preview
     $heroCreators = $db->query(
         'SELECT display_name, username, backstage_region, invitation_type, avatar
@@ -27,6 +28,7 @@ try {
     $totalLeads   = 500;
     $totalRegions = 20;
     $heroCreators = [];
+    $pricingPackages = [];
 }
 
 // Pad with mock data if not enough real rows
@@ -138,7 +140,7 @@ while (count($heroCreators) < 5) {
                 </p>
                 <div class="d-flex flex-wrap gap-3 mb-4">
                     <a href="/register.php" class="btn btn-danger btn-lg px-4">
-                        <i class="bi bi-rocket-takeoff me-2"></i>Start Free – 1 Lead/Day
+                        <i class="bi bi-rocket-takeoff me-2"></i>Start Free
                     </a>
                     <a href="#pricing" class="btn btn-outline-light btn-lg px-4">
                         See Pricing
@@ -470,105 +472,60 @@ while (count($heroCreators) < 5) {
             <p class="text-muted fs-5">Pick a plan and start receiving fresh creator leads every day</p>
         </div>
         <div class="row g-4 justify-content-center align-items-stretch">
+            <?php
+            $featuredPackageId = 0;
+            if (!empty($pricingPackages)) {
+                foreach ($pricingPackages as $pkg) {
+                    if ((float)($pkg['price_per_month'] ?? 0) > 0) {
+                        $featuredPackageId = (int)$pkg['id'];
+                        break;
+                    }
+                }
+            }
+            ?>
 
-            <!-- Free -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card pricing-card border h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="mb-3">
-                            <h5 class="fw-bold">Free</h5>
-                            <p class="text-muted small mb-0">Try it out with no commitment</p>
-                        </div>
-                        <div class="d-flex align-items-end gap-1 mb-1">
-                            <span class="fw-black" style="font-size:2.6rem;line-height:1">$0</span>
-                        </div>
-                        <div class="text-muted small mb-4">forever free</div>
-                        <ul class="list-unstyled mb-4 text-muted small flex-grow-1">
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>1 lead</strong> per day</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Full creator profiles</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>All invitation types</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Status tracking</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Dashboard access</li>
-                        </ul>
-                        <a href="/register.php" class="btn btn-outline-danger w-100 mt-auto">Get Started Free</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Starter $4.99 -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card pricing-card border h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="mb-3">
-                            <h5 class="fw-bold">Starter</h5>
-                            <p class="text-muted small mb-0">For individual LIVE managers</p>
-                        </div>
-                        <div class="d-flex align-items-end gap-1 mb-1">
-                            <span class="fw-black" style="font-size:2.6rem;line-height:1">$4.99</span>
-                        </div>
-                        <div class="text-muted small mb-4">per month</div>
-                        <ul class="list-unstyled mb-4 text-muted small flex-grow-1">
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>5 leads</strong> per day</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Full creator profiles</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>All invitation types</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Status tracking</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Dashboard access</li>
-                        </ul>
-                        <a href="/register.php" class="btn btn-outline-danger w-100 mt-auto">Get Started</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Growth $49.99 – Featured -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card pricing-card border featured h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h5 class="fw-bold">Growth</h5>
-                                <p class="text-muted small mb-0">For serious agencies</p>
+            <?php foreach ($pricingPackages as $package): ?>
+                <?php
+                $price = (float)($package['price_per_month'] ?? 0);
+                $isFree = $price <= 0;
+                $isFeatured = !$isFree && (int)$package['id'] === $featuredPackageId;
+                ?>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card pricing-card border <?= $isFeatured ? 'featured' : '' ?> h-100">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="fw-bold"><?= e((string)$package['name']) ?></h5>
+                                    <p class="text-muted small mb-0"><?= e((string)($package['description'] ?? ($isFree ? 'Try it out with no commitment' : 'Scale your creator pipeline'))) ?></p>
+                                </div>
+                                <?php if ($isFeatured): ?>
+                                    <span class="badge bg-danger">Most Popular</span>
+                                <?php endif; ?>
                             </div>
-                            <span class="badge bg-danger">Most Popular</span>
+                            <div class="d-flex align-items-end gap-1 mb-1">
+                                <span class="fw-black" style="font-size:2.6rem;line-height:1"><?= $isFree ? 'GBP 0' : 'GBP ' . number_format($price, 2) ?></span>
+                            </div>
+                            <div class="text-muted small mb-4"><?= $isFree ? 'forever free' : 'per month' ?></div>
+                            <ul class="list-unstyled mb-4 text-muted small flex-grow-1">
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong><?= (int)$package['leads_per_day'] ?> leads</strong> per day</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Full creator profiles</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>All invitation types</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Status tracking</li>
+                                <?php if (!$isFree): ?>
+                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>PayPal subscription billing</li>
+                                <?php endif; ?>
+                            </ul>
+                            <a href="/register.php" class="btn <?= $isFeatured ? 'btn-danger' : 'btn-outline-danger' ?> w-100 mt-auto">
+                                <?= $isFree ? 'Get Started Free' : 'Get Started' ?>
+                            </a>
                         </div>
-                        <div class="d-flex align-items-end gap-1 mb-1">
-                            <span class="fw-black" style="font-size:2.6rem;line-height:1">$49.99</span>
-                        </div>
-                        <div class="text-muted small mb-4">per month</div>
-                        <ul class="list-unstyled mb-4 text-muted small flex-grow-1">
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>50 leads</strong> per day</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Full creator profiles</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>All invitation types</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Status tracking</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Priority support</li>
-                        </ul>
-                        <a href="/register.php" class="btn btn-danger w-100 mt-auto">Get Started</a>
                     </div>
                 </div>
-            </div>
+            <?php endforeach; ?>
 
-            <!-- Pro $99.99 -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card pricing-card border h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="mb-3">
-                            <h5 class="fw-bold">Pro</h5>
-                            <p class="text-muted small mb-0">Maximum scale &amp; volume</p>
-                        </div>
-                        <div class="d-flex align-items-end gap-1 mb-1">
-                            <span class="fw-black" style="font-size:2.6rem;line-height:1">$99.99</span>
-                        </div>
-                        <div class="text-muted small mb-4">per month</div>
-                        <ul class="list-unstyled mb-4 text-muted small flex-grow-1">
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>100 leads</strong> per day</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Full creator profiles</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>All invitation types</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Status tracking</li>
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Priority support</li>
-                        </ul>
-                        <a href="/register.php" class="btn btn-outline-danger w-100 mt-auto">Get Started</a>
-                    </div>
-                </div>
-            </div>
+            <?php if (empty($pricingPackages)): ?>
+                <div class="col-12 text-center text-muted">Pricing is being updated. Please check back shortly.</div>
+            <?php endif; ?>
 
         </div>
 
@@ -576,11 +533,11 @@ while (count($heroCreators) < 5) {
         <div class="mt-5 text-center">
             <p class="text-muted small mb-3">Leads delivered per day across plans</p>
             <div class="d-flex justify-content-center flex-wrap gap-3">
-                <?php foreach ([['Free','1/day','secondary'],['Starter','5/day','primary'],['Growth','50/day','danger'],['Pro','100/day','dark']] as [$pl,$ld,$bc]): ?>
-                <div class="px-4 py-2 rounded-3 border" style="min-width:120px">
-                    <div class="fw-bold fs-5"><?= $ld ?></div>
-                    <div class="text-muted small"><?= $pl ?></div>
-                </div>
+                <?php foreach ($pricingPackages as $package): ?>
+                    <div class="px-4 py-2 rounded-3 border" style="min-width:120px">
+                        <div class="fw-bold fs-5"><?= (int)$package['leads_per_day'] ?>/day</div>
+                        <div class="text-muted small"><?= e((string)$package['name']) ?></div>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </div>

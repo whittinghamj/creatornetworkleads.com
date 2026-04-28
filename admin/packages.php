@@ -45,6 +45,7 @@ require __DIR__ . '/includes/header.php';
                     <th>#</th>
                     <th>Name</th>
                     <th>Description</th>
+                    <th>PayPal Plan ID</th>
                     <th>Leads / Day</th>
                     <th>Price / Month</th>
                     <th>Customers</th>
@@ -57,6 +58,7 @@ require __DIR__ . '/includes/header.php';
                     <td class="text-muted small"><?= (int)$package['id'] ?></td>
                     <td class="fw-semibold"><?= e($package['name']) ?></td>
                     <td class="small text-muted"><?= e((string)($package['description'] ?? '')) ?></td>
+                    <td class="small text-break"><?= !empty($package['paypal_plan_id']) ? e((string)$package['paypal_plan_id']) : '<span class="text-muted">Not set</span>' ?></td>
                     <td><span class="badge bg-primary"><?= (int)$package['leads_per_day'] ?></span></td>
                     <td class="fw-semibold">£<?= number_format((float)$package['price_per_month'], 2) ?></td>
                     <td>
@@ -78,7 +80,7 @@ require __DIR__ . '/includes/header.php';
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($packages)): ?>
-                <tr><td colspan="7" class="text-center py-4 text-muted">No packages created yet.</td></tr>
+                <tr><td colspan="8" class="text-center py-4 text-muted">No packages created yet.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

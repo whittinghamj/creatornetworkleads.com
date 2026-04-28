@@ -18,6 +18,7 @@ $package = [
     'description' => '',
     'leads_per_day' => 0,
     'price_per_month' => '0.00',
+    'paypal_plan_id' => '',
 ];
 
 if (!$isNew) {
@@ -40,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $package['description'] = postStr('description');
     $package['leads_per_day'] = max(0, (int)postStr('leads_per_day'));
     $package['price_per_month'] = number_format((float)postStr('price_per_month'), 2, '.', '');
+    $package['paypal_plan_id'] = postStr('paypal_plan_id');
 
     if ($package['name'] === '') {
         $errors[] = 'Package name is required.';
@@ -56,20 +58,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         if ($isNew) {
             $stmt = $db->prepare(
-                'INSERT INTO packages (name, description, leads_per_day, price_per_month)
-                 VALUES (?, ?, ?, ?)'
+                'INSERT INTO packages (name, description, leads_per_day, price_per_month, paypal_plan_id)
+                 VALUES (?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $package['name'],
                 $package['description'] ?: null,
                 $package['leads_per_day'],
                 $package['price_per_month'],
+                $package['paypal_plan_id'] !== '' ? $package['paypal_plan_id'] : null,
             ]);
             flash('Package created successfully.', 'success');
         } else {
             $stmt = $db->prepare(
                 'UPDATE packages
-                 SET name = ?, description = ?, leads_per_day = ?, price_per_month = ?
+                 SET name = ?, description = ?, leads_per_day = ?, price_per_month = ?, paypal_plan_id = ?
                  WHERE id = ?'
             );
             $stmt->execute([
@@ -77,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $package['description'] ?: null,
                 $package['leads_per_day'],
                 $package['price_per_month'],
+                $package['paypal_plan_id'] !== '' ? $package['paypal_plan_id'] : null,
                 $id,
             ]);
             flash('Package updated successfully.', 'success');
@@ -136,6 +140,14 @@ require __DIR__ . '/includes/header.php';
                 <div class="col-12">
                     <label class="form-label small fw-semibold">Description</label>
                     <textarea name="description" class="form-control" rows="4"><?= e((string)$package['description']) ?></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label small fw-semibold">PayPal Plan ID</label>
+                    <input type="text" name="paypal_plan_id" class="form-control"
+                           value="<?= e((string)($package['paypal_plan_id'] ?? '')) ?>"
+                           placeholder="P-XXXXXXXXXXXXXXX">
+                    <div class="form-text">Required for customer subscriptions via PayPal.</div>
                 </div>
 
                 <div class="col-12 pt-2">

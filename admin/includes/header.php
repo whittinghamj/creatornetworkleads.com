@@ -58,6 +58,9 @@ if (!isset($activeNav))  { $activeNav  = ''; }
             <a href="/admin/packages.php" class="nav-link <?= $activeNav === 'packages' ? 'active' : '' ?>">
                 <i class="bi bi-box-seam-fill"></i> Packages
             </a>
+            <a href="/admin/payments.php" class="nav-link <?= $activeNav === 'payments' ? 'active' : '' ?>">
+                <i class="bi bi-credit-card-fill"></i> Payments
+            </a>
             <a href="/admin/message-templates.php" class="nav-link <?= $activeNav === 'message-templates' ? 'active' : '' ?>">
                 <i class="bi bi-chat-left-text-fill"></i> Message Templates
             </a>

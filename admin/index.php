@@ -8,6 +8,7 @@ requireAdmin();
 
 $db = getDB();
 ensureUserIpTrackingSchema($db);
+ensureBillingSchema($db);
 
 // Aggregate stats
 $totalUsers      = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'customer'")->fetchColumn();
@@ -16,6 +17,8 @@ $pendingUsers    = (int)$db->query("SELECT COUNT(*) FROM users WHERE status = 'p
 $totalLeads      = (int)$db->query("SELECT COUNT(*) FROM creators")->fetchColumn();
 $assignedLeads   = (int)$db->query("SELECT COUNT(*) FROM creators WHERE assigned_customer IS NOT NULL")->fetchColumn();
 $unassignedLeads = $totalLeads - $assignedLeads;
+$activeSubscriptions = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'customer' AND subscription_status = 'active'")->fetchColumn();
+$failedPayments30d = (int)$db->query("SELECT COUNT(*) FROM paypal_payments WHERE status IN ('failed', 'denied') AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")->fetchColumn();
 
 // Recent signups
 $recentUsers = $db->query(
@@ -101,6 +104,24 @@ require __DIR__ . '/includes/header.php';
             </div>
         </div>
     </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon" style="background:#dcfce7;color:#16a34a"><i class="bi bi-credit-card-2-front-fill"></i></div>
+            <div>
+                <div class="admin-stat-label">Active Subs</div>
+                <div class="admin-stat-value"><?= number_format($activeSubscriptions) ?></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon" style="background:#fff7ed;color:#ea580c"><i class="bi bi-exclamation-octagon-fill"></i></div>
+            <div>
+                <div class="admin-stat-label">Failed Payments (30d)</div>
+                <div class="admin-stat-value"><?= number_format($failedPayments30d) ?></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4">
@@ -164,6 +185,9 @@ require __DIR__ . '/includes/header.php';
                     </a>
                     <a href="/admin/packages.php" class="btn btn-sm btn-outline-dark">
                         <i class="bi bi-box-seam me-1"></i>Packages
+                    </a>
+                    <a href="/admin/payments.php" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-credit-card me-1"></i>Payments
                     </a>
                     <a href="/admin/message-templates.php" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-chat-left-text me-1"></i>Message Templates
