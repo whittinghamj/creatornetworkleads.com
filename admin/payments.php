@@ -190,7 +190,7 @@ require __DIR__ . '/includes/header.php';
                         <td class="small">
                             <?php if (!empty($sub['package_name'])): ?>
                                 <?= e((string)$sub['package_name']) ?>
-                                <div class="text-muted" style="font-size:.72rem">GBP <?= number_format((float)($sub['price_per_month'] ?? 0), 2) ?> · <?= (int)($sub['leads_per_day'] ?? 0) ?>/day</div>
+                                <div class="text-muted" style="font-size:.72rem">&pound;<?= number_format((float)($sub['price_per_month'] ?? 0), 2) ?> · <?= (int)($sub['leads_per_day'] ?? 0) ?>/day</div>
                             <?php else: ?>
                                 <span class="text-muted">None</span>
                             <?php endif; ?>

@@ -503,7 +503,7 @@ while (count($heroCreators) < 5) {
                                 <?php endif; ?>
                             </div>
                             <div class="d-flex align-items-end gap-1 mb-1">
-                                <span class="fw-black" style="font-size:2.6rem;line-height:1"><?= $isFree ? 'GBP 0' : 'GBP ' . number_format($price, 2) ?></span>
+                                <span class="fw-black" style="font-size:2.6rem;line-height:1"><?= $isFree ? '&pound;0' : '&pound;' . number_format($price, 2) ?></span>
                             </div>
                             <div class="text-muted small mb-4"><?= $isFree ? 'forever free' : 'per month' ?></div>
                             <ul class="list-unstyled mb-4 text-muted small flex-grow-1">

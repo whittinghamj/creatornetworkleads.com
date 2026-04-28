@@ -157,7 +157,7 @@ function billingStatusBadge(string $status): string
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted small">Monthly Price</div>
-                    <div class="fw-semibold">GBP <?= number_format((float)($currentSubscription['price_per_month'] ?? 0), 2) ?></div>
+                    <div class="fw-semibold">&pound;<?= number_format((float)($currentSubscription['price_per_month'] ?? 0), 2) ?></div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted small">PayPal Subscription ID</div>
@@ -189,7 +189,7 @@ function billingStatusBadge(string $status): string
                             </div>
                             <p class="text-muted small mb-2"><?= e((string)($package['description'] ?? '')) ?></p>
                             <div class="small mb-1"><strong><?= (int)$package['leads_per_day'] ?></strong> leads/day</div>
-                            <div class="h5 mb-3">GBP <?= number_format((float)$package['price_per_month'], 2) ?><span class="text-muted fs-6">/month</span></div>
+                            <div class="h5 mb-3">&pound;<?= number_format((float)$package['price_per_month'], 2) ?><span class="text-muted fs-6">/month</span></div>
 
                             <?php if (trim((string)($package['paypal_plan_id'] ?? '')) === ''): ?>
                                 <div class="text-muted small">PayPal plan not configured for this package yet.</div>

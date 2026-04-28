@@ -203,6 +203,45 @@ DAEMON_QUIET_HOURS_END=6
 
 These controls are designed to reduce request pressure (rate limiting, daily caps, quiet hours, and exponential backoff on failures) and should be used in line with TikTok's terms and policies.
 
+## Ubuntu 24 cron setup (headless server)
+
+Use cron to auto-start the daemon on reboot and keep it alive.
+
+1) Make scripts executable:
+
+```bash
+cd /path/to/socialflame.live/automation/tiktok-backstage
+chmod +x run-explore-daemon.sh run-explore-daemon-stop.sh run-explore-daemon-cron.sh
+```
+
+2) Install crontab entries:
+
+```bash
+crontab -e
+```
+
+Add these lines (replace the absolute path if needed):
+
+```cron
+@reboot /usr/bin/flock -n /path/to/socialflame.live/automation/tiktok-backstage/.daemon/explore-daemon.cron.lock /path/to/socialflame.live/automation/tiktok-backstage/run-explore-daemon-cron.sh
+*/5 * * * * /usr/bin/flock -n /path/to/socialflame.live/automation/tiktok-backstage/.daemon/explore-daemon.cron.lock /path/to/socialflame.live/automation/tiktok-backstage/run-explore-daemon-cron.sh
+```
+
+What this does:
+
+- `@reboot`: starts daemon after server boot
+- every 5 minutes: health-check launcher restarts daemon only if not running
+- `flock`: prevents duplicate starts from overlapping cron ticks
+
+To stop and keep it stopped:
+
+```bash
+cd /path/to/socialflame.live/automation/tiktok-backstage
+./run-explore-daemon-stop.sh
+```
+
+`run-explore-daemon-cron.sh` respects the stop-file (`.daemon/explore-daemon.stop`) and will not restart while it exists.
+
 The script stores:
 
 - `added`: current Unix timestamp

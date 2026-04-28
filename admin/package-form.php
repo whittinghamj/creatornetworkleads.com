@@ -132,7 +132,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Price Per Month (GBP)</label>
+                    <label class="form-label small fw-semibold">Price Per Month (&pound;)</label>
                     <input type="number" name="price_per_month" min="0" step="0.01" class="form-control"
                            value="<?= e((string)$package['price_per_month']) ?>" required>
                 </div>
