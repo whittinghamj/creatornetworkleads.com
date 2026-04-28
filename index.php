@@ -15,7 +15,12 @@ try {
     $db         = getDB();
     $totalLeads = (int)$db->query('SELECT COUNT(*) FROM creators')->fetchColumn();
     $totalRegions = (int)$db->query('SELECT COUNT(DISTINCT backstage_region) FROM creators WHERE backstage_region IS NOT NULL AND backstage_region != ""')->fetchColumn();
-    $pricingPackages = getPackages($db);
+    $pricingPackages = array_values(array_filter(
+        getPackages($db),
+        static function (array $pkg): bool {
+            return trim((string)($pkg['name'] ?? '')) !== 'SocialFlame - Free Package';
+        }
+    ));
     // Grab up to 5 real creators with avatars for the hero preview
     $heroCreators = $db->query(
         'SELECT display_name, username, backstage_region, invitation_type, avatar
