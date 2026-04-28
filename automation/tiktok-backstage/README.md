@@ -165,6 +165,44 @@ cd /path/to/socialflame.live/automation/tiktok-backstage
 ./run-explore.sh
 ```
 
+## Explore daemon mode (continuous loop with safeguards)
+
+Use daemon mode to run explore cycles continuously until told to stop:
+
+```bash
+cd /path/to/socialflame.live/automation/tiktok-backstage
+chmod +x run-explore-daemon.sh run-explore-daemon-stop.sh
+./run-explore-daemon.sh
+```
+
+Stop it cleanly from another terminal:
+
+```bash
+cd /path/to/socialflame.live/automation/tiktok-backstage
+./run-explore-daemon-stop.sh
+```
+
+Daemon state/log files:
+
+- `.daemon/explore-daemon.log`
+- `.daemon/explore-daemon.pid`
+- `.daemon/explore-daemon.stop`
+
+Safety and anti-overload controls (set in `.env`):
+
+```bash
+DAEMON_LOOP_INTERVAL_SECONDS=1800
+DAEMON_MIN_SECONDS_BETWEEN_RUNS=1200
+DAEMON_MAX_RUNS_PER_DAY=24
+DAEMON_JITTER_SECONDS=300
+DAEMON_FAILURE_BACKOFF_BASE_SECONDS=1800
+DAEMON_FAILURE_BACKOFF_MAX_SECONDS=21600
+DAEMON_QUIET_HOURS_START=0
+DAEMON_QUIET_HOURS_END=6
+```
+
+These controls are designed to reduce request pressure (rate limiting, daily caps, quiet hours, and exponential backoff on failures) and should be used in line with TikTok's terms and policies.
+
 The script stores:
 
 - `added`: current Unix timestamp
