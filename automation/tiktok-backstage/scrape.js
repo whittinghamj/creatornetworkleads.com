@@ -89,7 +89,7 @@ async function resolveUsernames() {
         WHERE backstage_checked = 'no'
           AND username IS NOT NULL
           AND username != ''
-        ORDER BY id ASC
+        ORDER BY id DESC
         LIMIT ?
       `,
       [BATCH_SIZE]
