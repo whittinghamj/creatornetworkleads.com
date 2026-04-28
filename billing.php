@@ -64,7 +64,12 @@ if ($paypalFlow === 'cancel') {
     exit;
 }
 
-$packages = getPackages($db);
+$packages = array_values(array_filter(
+    getPackages($db),
+    static function (array $package): bool {
+        return trim((string)($package['paypal_plan_id'] ?? '')) !== '';
+    }
+));
 
 $currentSubStmt = $db->prepare(
     'SELECT ps.*, p.name AS package_name, p.leads_per_day, p.price_per_month
@@ -191,18 +196,14 @@ function billingStatusBadge(string $status): string
                             <div class="small mb-1"><strong><?= (int)$package['leads_per_day'] ?></strong> leads/day</div>
                             <div class="h5 mb-3">&pound;<?= number_format((float)$package['price_per_month'], 2) ?><span class="text-muted fs-6">/month</span></div>
 
-                            <?php if (trim((string)($package['paypal_plan_id'] ?? '')) === ''): ?>
-                                <div class="text-muted small">PayPal plan not configured for this package yet.</div>
-                            <?php else: ?>
-                                <form method="POST" action="/billing.php">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="action" value="start_subscription">
-                                    <input type="hidden" name="package_id" value="<?= (int)$package['id'] ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm w-100">
-                                        <i class="bi bi-paypal me-1"></i><?= $subscriptionStatus === 'active' ? 'Switch to This Package' : 'Subscribe with PayPal' ?>
-                                    </button>
-                                </form>
-                            <?php endif; ?>
+                            <form method="POST" action="/billing.php">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="start_subscription">
+                                <input type="hidden" name="package_id" value="<?= (int)$package['id'] ?>">
+                                <button type="submit" class="btn btn-danger btn-sm w-100">
+                                    <i class="bi bi-paypal me-1"></i><?= $subscriptionStatus === 'active' ? 'Switch to This Package' : 'Subscribe with PayPal' ?>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 <?php endforeach; ?>
