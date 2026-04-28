@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ROOT_DIR}/.env"
+PROCESS_SCRIPT="${ROOT_DIR}/run.sh"
 
 if [[ -f "${ENV_FILE}" ]]; then
   while IFS= read -r line || [[ -n "${line}" ]]; do
@@ -53,4 +54,14 @@ if [[ -z "${NODE_CMD}" ]]; then
 fi
 
 cd "${ROOT_DIR}"
-exec "${NODE_CMD}" explore-usernames.js
+"${NODE_CMD}" explore-usernames.js
+
+if [[ "${EXPLORE_PROCESS_UNCHECKED:-true}" == "true" ]]; then
+  if [[ ! -x "${PROCESS_SCRIPT}" ]]; then
+    echo "Found new explore usernames, but ${PROCESS_SCRIPT} is not executable." >&2
+    exit 1
+  fi
+
+  echo "[run-explore.sh] Processing newly added usernames through scrape.js ..."
+  exec "${PROCESS_SCRIPT}" 1
+fi

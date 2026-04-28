@@ -165,6 +165,17 @@ cd /path/to/socialflame.live/automation/tiktok-backstage
 ./run-explore.sh
 ```
 
+`run-explore.sh` now does two steps by default:
+
+1. scrapes fresh TikTok LIVE usernames into `creators`
+2. immediately runs `run.sh 1` to process unchecked usernames through Backstage so they become dashboard-ready leads
+
+If you only want raw username collection without the follow-up processing step:
+
+```bash
+EXPLORE_PROCESS_UNCHECKED=false ./run-explore.sh
+```
+
 ## Explore daemon mode (continuous loop with safeguards)
 
 Use daemon mode to run explore cycles continuously until told to stop:
