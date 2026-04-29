@@ -516,6 +516,67 @@ async function waitForDashboard(page) {
   await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
 }
 
+async function resolveBusinessEssentialsNotice(page) {
+  let clicks = 0;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const viewDetails = page.locator('[data-id="header-notice-test-action"]').first();
+    const noticeCard = page.locator('.headerNoticeCard-BNn1mA').first();
+
+    let noticeVisible = false;
+    try {
+      noticeVisible = await viewDetails.isVisible({ timeout: 1500 });
+    } catch {
+      noticeVisible = false;
+    }
+
+    if (!noticeVisible) {
+      try {
+        noticeVisible = await noticeCard.isVisible({ timeout: 1000 });
+      } catch {
+        noticeVisible = false;
+      }
+    }
+
+    if (!noticeVisible) {
+      break;
+    }
+
+    await dismissOverlays(page);
+
+    try {
+      await viewDetails.click({ timeout: 5000 });
+    } catch {
+      await page
+        .evaluate(() => {
+          const node = document.querySelector('[data-id="header-notice-test-action"]');
+          if (node instanceof HTMLElement) {
+            node.click();
+          }
+        })
+        .catch(() => {});
+    }
+
+    clicks += 1;
+
+    await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUT_MS }).catch(() => {});
+    await page.waitForTimeout(1500);
+
+    if (!page.url().startsWith(SUCCESS_URL)) {
+      await page.goto(SUCCESS_URL, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUT_MS,
+      });
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    }
+
+    await dismissOverlays(page);
+    await page.waitForTimeout(800);
+  }
+
+  return clicks;
+}
+
 async function saveFailureArtifacts(page, name) {
   await ensureOutputDir();
   await page.screenshot({
@@ -1235,6 +1296,7 @@ async function main() {
   const creatorsToCheck = await resolveUsernames();
   const creatorUsernames = creatorsToCheck.map((creator) => creator.username);
   const completedSteps = [];
+  let businessNoticeClicks = 0;
   let currentStep = 'launch browser';
   const markStep = (step) => {
     currentStep = step;
@@ -1319,6 +1381,10 @@ async function main() {
     await waitForDashboard(page);
     markStep('dashboard loaded');
 
+    currentStep = 'resolve business essentials notice';
+    businessNoticeClicks = await resolveBusinessEssentialsNotice(page);
+    markStep(`resolved business essentials notice (${businessNoticeClicks} click${businessNoticeClicks === 1 ? '' : 's'})`);
+
     // Dismiss any modals that appear after login lands on the dashboard
     // (e.g. the "Creator Network Management Policy" overlay).
     currentStep = 'dismiss post-login overlays';
@@ -1383,6 +1449,7 @@ async function main() {
       coreMetricsVisible: extracted.coreMetricsVisible,
       lastUpdatedAt: extracted.lastUpdatedAt,
       metrics: extracted.metrics,
+      businessNoticeClicks,
       creatorLookup: {
         searchedUsernames: creatorUsernames,
         apiResponseUrl: apiResult?.url || null,
@@ -1410,6 +1477,7 @@ async function main() {
       url: page.url(),
       currentStep,
       completedSteps,
+      businessNoticeClicks,
       message: error instanceof Error ? error.message : String(error),
       diagnostics,
       scrapedAt: new Date().toISOString(),
