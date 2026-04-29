@@ -552,7 +552,7 @@ async function waitForInviteButtonReady(page) {
       element.getAttribute("aria-disabled") === "true";
 
     return !disabled;
-  }, { timeout: TIMEOUT_MS });
+  }, undefined, { timeout: TIMEOUT_MS });
 
   await page.waitForFunction(() => {
     const element = document.querySelector('button[data-id="add-host-btn"]');
@@ -562,7 +562,7 @@ async function waitForInviteButtonReady(page) {
     }
 
     return !card.querySelector('.semi-skeleton');
-  }, { timeout: TIMEOUT_MS });
+  }, undefined, { timeout: TIMEOUT_MS });
 
   await saveDebugSnapshot(page, "invite-button-ready", creatorsCard);
 
