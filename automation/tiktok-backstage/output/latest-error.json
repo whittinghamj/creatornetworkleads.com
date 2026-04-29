@@ -1,6 +1,31 @@
 {
   "success": false,
   "url": "https://live-backstage.tiktok.com/portal/overview",
+  "currentStep": "wait for invite modal",
+  "completedSteps": [
+    "opened login page",
+    "dismissed pre-login overlays",
+    "dashboard loaded"
+  ],
   "message": "page.waitForFunction: Timeout 30000ms exceeded.",
-  "scrapedAt": "2026-04-23T22:47:30.257Z"
+  "diagnostics": {
+    "inviteButton": {
+      "exists": true,
+      "visible": true,
+      "disabled": true,
+      "ariaDisabled": "true",
+      "text": "Invite creators"
+    },
+    "visibleModals": [
+      {
+        "dataId": "policy-modal",
+        "ariaLabel": null,
+        "className": "semi-modal",
+        "text": "TikTok Creator Network Management Policy"
+      }
+    ],
+    "visiblePopovers": [
+      "Please review your business metrics"
+    ]
+  }
 }
