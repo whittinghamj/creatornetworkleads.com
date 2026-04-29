@@ -664,6 +664,50 @@ async function forceUnblockInviteUi(page) {
     .catch(() => {});
 }
 
+async function waitForInviteButtonEnabled(page, timeoutMs) {
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    const state = await page
+      .evaluate(() => {
+        const button = document.querySelector('button[data-id="add-host-btn"]');
+        if (!button) {
+          return {
+            exists: false,
+            enabled: false,
+            hasSkeleton: false,
+          };
+        }
+
+        const disabled =
+          button.hasAttribute('disabled') ||
+          button.getAttribute('aria-disabled') === 'true';
+        const card = button.closest('.workbench-card');
+        const hasSkeleton = Boolean(card?.querySelector('.semi-skeleton'));
+
+        return {
+          exists: true,
+          enabled: !disabled,
+          hasSkeleton,
+        };
+      })
+      .catch(() => ({ exists: false, enabled: false, hasSkeleton: false }));
+
+    if (state.exists && state.enabled && !state.hasSkeleton) {
+      return true;
+    }
+
+    await dismissOverlays(page);
+    await forceUnblockInviteUi(page);
+
+    // Some runs require one extra keypress to close stuck policy overlays.
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(750);
+  }
+
+  return false;
+}
+
 async function waitForInviteButtonReady(page) {
   const button = page.locator('button[data-id="add-host-btn"]').first();
   await button.waitFor({ state: "visible", timeout: TIMEOUT_MS });
@@ -681,33 +725,13 @@ async function waitForInviteButtonReady(page) {
     }
   }
 
-  try {
-    await page.waitForFunction(() => {
-      const element = document.querySelector('button[data-id="add-host-btn"]');
-      if (!element) {
-        return false;
-      }
-
-      const disabled =
-        element.hasAttribute("disabled") ||
-        element.getAttribute("aria-disabled") === "true";
-
-      return !disabled;
-    }, undefined, { timeout: TIMEOUT_MS });
-
-    await page.waitForFunction(() => {
-      const element = document.querySelector('button[data-id="add-host-btn"]');
-      const card = element?.closest('.workbench-card');
-      if (!card) {
-        return false;
-      }
-
-      return !card.querySelector('.semi-skeleton');
-    }, undefined, { timeout: TIMEOUT_MS });
-  } catch {
-    await dismissOverlays(page);
-    await forceUnblockInviteUi(page);
-    await page.waitForTimeout(500);
+  const enabled = await waitForInviteButtonEnabled(page, TIMEOUT_MS);
+  if (!enabled) {
+    const diagnostics = await collectFailureDiagnostics(page);
+    throw new Error(
+      `Invite button never became enabled within ${TIMEOUT_MS}ms. ` +
+      `inviteDisabled=${diagnostics.inviteButton?.disabled} ariaDisabled=${diagnostics.inviteButton?.ariaDisabled}`
+    );
   }
 
   await saveDebugSnapshot(page, "invite-button-ready", creatorsCard);
