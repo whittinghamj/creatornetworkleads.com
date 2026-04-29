@@ -292,8 +292,49 @@ try {
   const raw = fs.readFileSync('output/latest-error.json', 'utf8');
   const data = JSON.parse(raw);
   const message = String(data?.message || '').trim();
+  const currentStep = String(data?.currentStep || '').trim();
+  const completedSteps = Array.isArray(data?.completedSteps) ? data.completedSteps : [];
+  const visibleModals = Array.isArray(data?.diagnostics?.visibleModals) ? data.diagnostics.visibleModals : [];
+  const visiblePopovers = Array.isArray(data?.diagnostics?.visiblePopovers) ? data.diagnostics.visiblePopovers : [];
+  const inviteButton = data?.diagnostics?.inviteButton && typeof data.diagnostics.inviteButton === 'object'
+    ? data.diagnostics.inviteButton
+    : null;
+
   if (message) {
     console.log(`scrape.js failed: ${message}`);
+  }
+
+  if (currentStep) {
+    console.log(`Current step: ${currentStep}`);
+  }
+
+  if (completedSteps.length) {
+    console.log('Completed steps:');
+    for (const [index, step] of completedSteps.entries()) {
+      console.log(`  ${index + 1}. ${String(step)}`);
+    }
+  }
+
+  if (inviteButton) {
+    console.log(
+      `Invite button: exists=${Boolean(inviteButton.exists)} visible=${Boolean(inviteButton.visible)} disabled=${inviteButton.disabled} ariaDisabled=${inviteButton.ariaDisabled ?? 'null'} text=${inviteButton.text || '(empty)'}`
+    );
+  }
+
+  if (visibleModals.length) {
+    console.log('Visible modals:');
+    for (const modal of visibleModals) {
+      console.log(
+        `  - dataId=${modal?.dataId || 'null'} ariaLabel=${modal?.ariaLabel || 'null'} class=${modal?.className || 'null'} text=${String(modal?.text || '').slice(0, 180)}`
+      );
+    }
+  }
+
+  if (visiblePopovers.length) {
+    console.log('Visible popovers/toasts:');
+    for (const popover of visiblePopovers) {
+      console.log(`  - ${String(popover).slice(0, 180)}`);
+    }
   }
 } catch {
   // Ignore parse/read issues.

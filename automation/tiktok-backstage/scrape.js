@@ -534,6 +534,88 @@ async function saveDebugSnapshot(page, name, modal = null) {
   }
 }
 
+async function collectFailureDiagnostics(page) {
+  const diagnostics = {
+    title: null,
+    visibleModals: [],
+    visiblePopovers: [],
+    inviteButton: {
+      exists: false,
+      visible: false,
+      disabled: null,
+      ariaDisabled: null,
+      text: null,
+    },
+  };
+
+  try {
+    diagnostics.title = await page.title().catch(() => null);
+  } catch {
+    diagnostics.title = null;
+  }
+
+  diagnostics.visibleModals = await page
+    .evaluate(() => {
+      return Array.from(
+        document.querySelectorAll('.semi-modal:visible, .semi-modal-content, .semi-sidesheet:visible, [data-id="policy-modal"]')
+      )
+        .map((node) => {
+          const element = node;
+          const text = (element.textContent || '').replace(/\s+/g, ' ').trim();
+          const dataId = element.getAttribute('data-id');
+          const ariaLabel = element.getAttribute('aria-label');
+          const className = typeof element.className === 'string' ? element.className : '';
+
+          return {
+            dataId: dataId || null,
+            ariaLabel: ariaLabel || null,
+            className,
+            text: text.slice(0, 300),
+          };
+        })
+        .filter((entry) => entry.text || entry.dataId || entry.ariaLabel)
+        .slice(0, 8);
+    })
+    .catch(() => []);
+
+  diagnostics.visiblePopovers = await page
+    .evaluate(() => {
+      return Array.from(document.querySelectorAll('.semi-popover-wrapper, .semi-toast-wrapper'))
+        .map((node) => (node.textContent || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .map((text) => text.slice(0, 200))
+        .slice(0, 8);
+    })
+    .catch(() => []);
+
+  diagnostics.inviteButton = await page
+    .evaluate(() => {
+      const element = document.querySelector('button[data-id="add-host-btn"]');
+      if (!element) {
+        return {
+          exists: false,
+          visible: false,
+          disabled: null,
+          ariaDisabled: null,
+          text: null,
+        };
+      }
+
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return {
+        exists: true,
+        visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0,
+        disabled: element.hasAttribute('disabled'),
+        ariaDisabled: element.getAttribute('aria-disabled'),
+        text: (element.textContent || '').replace(/\s+/g, ' ').trim() || null,
+      };
+    })
+    .catch(() => diagnostics.inviteButton);
+
+  return diagnostics;
+}
+
 async function waitForInviteButtonReady(page) {
   const button = page.locator('button[data-id="add-host-btn"]').first();
   await button.waitFor({ state: "visible", timeout: TIMEOUT_MS });
@@ -1038,6 +1120,13 @@ async function extractAllCreatorResults(rows, requestedUsernames) {
 async function main() {
   const creatorsToCheck = await resolveUsernames();
   const creatorUsernames = creatorsToCheck.map((creator) => creator.username);
+  const completedSteps = [];
+  let currentStep = 'launch browser';
+  const markStep = (step) => {
+    currentStep = step;
+    completedSteps.push(step);
+  };
+
   const browser = await chromium.launch({
     headless: HEADLESS,
     args: ["--disable-blink-features=AutomationControlled"],
@@ -1093,20 +1182,37 @@ async function main() {
   }
 
   try {
+    currentStep = 'open login page';
     await page.goto(LOGIN_URL, {
       waitUntil: "domcontentloaded",
       timeout: TIMEOUT_MS,
     });
+    markStep('opened login page');
 
+    currentStep = 'dismiss pre-login overlays';
     await dismissOverlays(page);
+    markStep('dismissed pre-login overlays');
+
+    currentStep = 'fill login form';
     await fillLoginForm(page);
+    markStep('filled login form');
+
+    currentStep = 'submit login';
     await submitLogin(page);
+    markStep('submitted login');
+
+    currentStep = 'wait for dashboard';
     await waitForDashboard(page);
+    markStep('dashboard loaded');
+
     // Dismiss any modals that appear after login lands on the dashboard
     // (e.g. the "Creator Network Management Policy" overlay).
+    currentStep = 'dismiss post-login overlays';
     await dismissOverlays(page);
     await page.waitForTimeout(1000);
+    markStep('dismissed post-login overlays');
 
+    currentStep = 'confirm dashboard state';
     const currentUrl = page.url();
     const bodyText = await page.locator("body").innerText();
     const extracted = extractMetricsFromText(bodyText);
@@ -1120,25 +1226,41 @@ async function main() {
         `Login did not reach the expected dashboard state. URL: ${currentUrl}`
       );
     }
+    markStep('confirmed dashboard state');
 
+    currentStep = 'open invite flow';
     await clickInviteButton(page);
-    await waitForInviteModal(page);
-    const apiResult = await submitCreatorSearch(page, creatorUsernames);
-    const resultRows = await waitForInviteResults(page, creatorUsernames.length);
+    markStep('clicked invite button');
 
+    currentStep = 'wait for invite modal';
+    await waitForInviteModal(page);
+    markStep('invite modal opened');
+
+    currentStep = 'submit creator search';
+    const apiResult = await submitCreatorSearch(page, creatorUsernames);
+    markStep('submitted creator search');
+
+    currentStep = 'wait for invite results';
+    const resultRows = await waitForInviteResults(page, creatorUsernames.length);
+    markStep('invite results loaded');
+
+    currentStep = 'extract creator results';
     const tableResults = await extractAllCreatorResults(resultRows, creatorUsernames);
     const creatorResults = mergeCreatorResults(
       tableResults,
       creatorUsernames,
       apiResult?.payload || null
     );
+    markStep('extracted creator results');
 
     const creatorResultsWithIds = creatorResults.map((result, index) => ({
       ...result,
       id: creatorsToCheck[index]?.id ?? null,
     }));
 
+    currentStep = 'update creators in database';
     await updateCreatorsInDatabase(creatorResultsWithIds);
+    markStep('updated creators in database');
 
     const result = {
       success: true,
@@ -1167,11 +1289,15 @@ async function main() {
   } catch (error) {
     await saveFailureArtifacts(page, "failure");
     await writeDebugLog(debugEntries);
+    const diagnostics = await collectFailureDiagnostics(page);
 
     const failure = {
       success: false,
       url: page.url(),
+      currentStep,
+      completedSteps,
       message: error instanceof Error ? error.message : String(error),
+      diagnostics,
       scrapedAt: new Date().toISOString(),
     };
 
