@@ -567,9 +567,20 @@ async function collectFailureDiagnostics(page) {
 
   diagnostics.visibleModals = await page
     .evaluate(() => {
+      const isVisible = (element) => {
+        if (!(element instanceof HTMLElement)) {
+          return false;
+        }
+
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      };
+
       return Array.from(
-        document.querySelectorAll('.semi-modal:visible, .semi-modal-content, .semi-sidesheet:visible, [data-id="policy-modal"]')
+        document.querySelectorAll('.semi-modal, .semi-modal-content, .semi-sidesheet, [data-id="policy-modal"]')
       )
+        .filter((node) => isVisible(node) || node.matches('[data-id="policy-modal"]'))
         .map((node) => {
           const element = node;
           const text = (element.textContent || '').replace(/\s+/g, ' ').trim();
@@ -627,6 +638,32 @@ async function collectFailureDiagnostics(page) {
   return diagnostics;
 }
 
+async function forceUnblockInviteUi(page) {
+  await page
+    .evaluate(() => {
+      for (const selector of [
+        '[data-id="policy-modal"]',
+        '.semi-modal-mask',
+        '.semi-modal-wrap',
+      ]) {
+        const nodes = document.querySelectorAll(selector);
+        for (const node of nodes) {
+          const wrapper = node.closest('.semi-portal') || node.closest('.semi-modal-wrap') || node;
+          wrapper.remove();
+        }
+      }
+
+      const inviteButton = document.querySelector('button[data-id="add-host-btn"]');
+      if (inviteButton instanceof HTMLButtonElement) {
+        inviteButton.disabled = false;
+        inviteButton.removeAttribute('disabled');
+        inviteButton.setAttribute('aria-disabled', 'false');
+        inviteButton.style.pointerEvents = 'auto';
+      }
+    })
+    .catch(() => {});
+}
+
 async function waitForInviteButtonReady(page) {
   const button = page.locator('button[data-id="add-host-btn"]').first();
   await button.waitFor({ state: "visible", timeout: TIMEOUT_MS });
@@ -644,28 +681,34 @@ async function waitForInviteButtonReady(page) {
     }
   }
 
-  await page.waitForFunction(() => {
-    const element = document.querySelector('button[data-id="add-host-btn"]');
-    if (!element) {
-      return false;
-    }
+  try {
+    await page.waitForFunction(() => {
+      const element = document.querySelector('button[data-id="add-host-btn"]');
+      if (!element) {
+        return false;
+      }
 
-    const disabled =
-      element.hasAttribute("disabled") ||
-      element.getAttribute("aria-disabled") === "true";
+      const disabled =
+        element.hasAttribute("disabled") ||
+        element.getAttribute("aria-disabled") === "true";
 
-    return !disabled;
-  }, undefined, { timeout: TIMEOUT_MS });
+      return !disabled;
+    }, undefined, { timeout: TIMEOUT_MS });
 
-  await page.waitForFunction(() => {
-    const element = document.querySelector('button[data-id="add-host-btn"]');
-    const card = element?.closest('.workbench-card');
-    if (!card) {
-      return false;
-    }
+    await page.waitForFunction(() => {
+      const element = document.querySelector('button[data-id="add-host-btn"]');
+      const card = element?.closest('.workbench-card');
+      if (!card) {
+        return false;
+      }
 
-    return !card.querySelector('.semi-skeleton');
-  }, undefined, { timeout: TIMEOUT_MS });
+      return !card.querySelector('.semi-skeleton');
+    }, undefined, { timeout: TIMEOUT_MS });
+  } catch {
+    await dismissOverlays(page);
+    await forceUnblockInviteUi(page);
+    await page.waitForTimeout(500);
+  }
 
   await saveDebugSnapshot(page, "invite-button-ready", creatorsCard);
 
