@@ -354,6 +354,7 @@ function extractMetricsFromText(bodyText) {
 }
 
 async function dismissOverlays(page) {
+  const policyModal = page.locator('[data-id="policy-modal"]').first();
   const buttons = [
     page.getByRole("button", { name: /accept/i }),
     page.getByRole("button", { name: /agree/i }),
@@ -361,6 +362,7 @@ async function dismissOverlays(page) {
     page.getByRole("button", { name: /decline optional cookies/i }),
     page.getByRole("button", { name: /got it/i }),
     // Close any TikTok Backstage policy/info modals (e.g. Creator Network Management Policy).
+    policyModal.locator('button[aria-label="close"]').first(),
     page.locator('button.semi-modal-close[aria-label="close"]').first(),
   ];
 
@@ -377,14 +379,23 @@ async function dismissOverlays(page) {
   // Force-remove any lingering policy/info modals by data-id.
   await page
     .evaluate(() => {
-      for (const selector of ['[data-id="policy-modal"]', '.semi-modal-mask']) {
+      for (const selector of [
+        '[data-id="policy-modal"]',
+        '[data-id="policy-modal"] .semi-modal-mask',
+        '.semi-modal-mask',
+        '.semi-modal-wrap',
+      ]) {
         const nodes = document.querySelectorAll(selector);
         for (const node of nodes) {
-          node.remove();
+          const modalWrap = node.closest('.semi-portal') || node.closest('.semi-modal-wrap') || node;
+          modalWrap.remove();
         }
       }
     })
     .catch(() => {});
+
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.waitForTimeout(300).catch(() => {});
 
   await page
     .addStyleTag({
@@ -622,6 +633,16 @@ async function waitForInviteButtonReady(page) {
   const creatorsCard = button.locator(
     'xpath=ancestor::div[contains(@class,"workbench-card")][1]'
   );
+
+  const policyModal = page.locator('[data-id="policy-modal"]').first();
+  if (await policyModal.count()) {
+    await dismissOverlays(page);
+    if (await policyModal.isVisible().catch(() => false)) {
+      throw new Error(
+        'Creator Network Management Policy modal is still visible and blocking the Invite button.'
+      );
+    }
+  }
 
   await page.waitForFunction(() => {
     const element = document.querySelector('button[data-id="add-host-btn"]');
