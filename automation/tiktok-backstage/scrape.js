@@ -360,17 +360,31 @@ async function dismissOverlays(page) {
     page.getByRole("button", { name: /allow all/i }),
     page.getByRole("button", { name: /decline optional cookies/i }),
     page.getByRole("button", { name: /got it/i }),
+    // Close any TikTok Backstage policy/info modals (e.g. Creator Network Management Policy).
+    page.locator('button.semi-modal-close[aria-label="close"]').first(),
   ];
 
   for (const button of buttons) {
     try {
-      if (await button.first().isVisible({ timeout: 1500 })) {
-        await button.first().click({ timeout: 1500 });
+      if (await button.isVisible({ timeout: 1500 })) {
+        await button.click({ timeout: 1500 });
       }
     } catch {
       // Overlay was not present or became detached.
     }
   }
+
+  // Force-remove any lingering policy/info modals by data-id.
+  await page
+    .evaluate(() => {
+      for (const selector of ['[data-id="policy-modal"]', '.semi-modal-mask']) {
+        const nodes = document.querySelectorAll(selector);
+        for (const node of nodes) {
+          node.remove();
+        }
+      }
+    })
+    .catch(() => {});
 
   await page
     .addStyleTag({
@@ -1088,6 +1102,10 @@ async function main() {
     await fillLoginForm(page);
     await submitLogin(page);
     await waitForDashboard(page);
+    // Dismiss any modals that appear after login lands on the dashboard
+    // (e.g. the "Creator Network Management Policy" overlay).
+    await dismissOverlays(page);
+    await page.waitForTimeout(1000);
 
     const currentUrl = page.url();
     const bodyText = await page.locator("body").innerText();
