@@ -361,6 +361,8 @@ async function dismissOverlays(page) {
     page.getByRole("button", { name: /allow all/i }),
     page.getByRole("button", { name: /decline optional cookies/i }),
     page.getByRole("button", { name: /got it/i }),
+    page.locator('.headerNoticeCloseButton-aRcCMY').first(),
+    page.locator('[data-id="header-notice-test-action"]').first(),
     // Close any TikTok Backstage policy/info modals (e.g. Creator Network Management Policy).
     policyModal.locator('button[aria-label="close"]').first(),
     page.locator('button.semi-modal-close[aria-label="close"]').first(),
@@ -391,6 +393,18 @@ async function dismissOverlays(page) {
           modalWrap.remove();
         }
       }
+
+      // Remove the top-right "Please review your business metrics" notice popup.
+      const notificationWrappers = document.querySelectorAll('.semi-notification-wrapper, .semi-notification-notice');
+      for (const wrapper of notificationWrappers) {
+        const text = (wrapper.textContent || '').toLowerCase();
+        if (
+          text.includes('please review your business metrics') ||
+          text.includes('attention needed for business essentials')
+        ) {
+          wrapper.remove();
+        }
+      }
     })
     .catch(() => {});
 
@@ -402,7 +416,12 @@ async function dismissOverlays(page) {
       content: `
         tiktok-cookie-banner,
         #tiktok-cookie-banner-config,
-        .semi-sidesheet-mask + tiktok-cookie-banner {
+        .semi-sidesheet-mask + tiktok-cookie-banner,
+        .semi-notification-wrapper,
+        .semi-notification-list,
+        .semi-notification-notice,
+        .headerNoticeCard-BNn1mA,
+        .popupNotification-HXEchd {
           display: none !important;
           visibility: hidden !important;
           pointer-events: none !important;
@@ -414,6 +433,13 @@ async function dismissOverlays(page) {
   await page
     .evaluate(() => {
       for (const selector of ["tiktok-cookie-banner", "#tiktok-cookie-banner-config"]) {
+        const nodes = document.querySelectorAll(selector);
+        for (const node of nodes) {
+          node.remove();
+        }
+      }
+
+      for (const selector of ['.semi-notification-wrapper', '.semi-notification-notice', '.headerNoticeCard-BNn1mA']) {
         const nodes = document.querySelectorAll(selector);
         for (const node of nodes) {
           node.remove();

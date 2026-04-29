@@ -13,6 +13,10 @@
 			"/^cd '/Users/whittinghamj/Dropbox/Source Code/creatornetworkleads\\.com' && php -r 'require \"config/config\\.php\"; require \"config/database\\.php\"; \\$db=getDB\\(\\); \\$count=\\(int\\)\\$db->query\\(\"SELECT COUNT\\(\\*\\) FROM creators WHERE LOWER\\(COALESCE\\(backstage_checked,\\\\\"\\\\\"\\)\\)=\\\\\"yes\\\\\"\"\\)->fetchColumn\\(\\); echo \\$count, PHP_EOL;'$/": {
 				"approve": true,
 				"matchCommandLine": true
+			},
+			"/^cd '/Users/whittinghamj/Dropbox/Source Code/creatornetworkleads\\.com/automation/tiktok-backstage' && node --check scrape\\.js$/": {
+				"approve": true,
+				"matchCommandLine": true
 			}
 		}
 	}
