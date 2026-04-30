@@ -14,6 +14,25 @@ declare -a ACCOUNT_IDS=()
 declare -a ACCOUNT_EMAILS=()
 declare -a ACCOUNT_PASSWORDS=()
 
+pick_node() {
+  local candidate
+
+  for candidate in "${NODE_BIN:-}" "$(command -v node || true)" /opt/homebrew/bin/node /usr/local/bin/node; do
+    if [[ -z "${candidate}" || ! -x "${candidate}" ]]; then
+      continue
+    fi
+
+    local major
+    major="$("${candidate}" -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)"
+    if [[ "${major}" =~ ^[0-9]+$ ]] && (( major >= 18 )); then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 load_env() {
   local source_file=""
   if [[ -f "${ROOT_ENV_FILE}" ]]; then
@@ -352,6 +371,13 @@ if ! [[ "${LOOPS}" =~ ^[0-9]+$ ]] || [[ "${LOOPS}" -lt 1 ]]; then
   exit 1
 fi
 
+NODE_CMD="$(pick_node || true)"
+
+if [[ -z "${NODE_CMD}" ]]; then
+  echo "Node.js 18+ is required to run the scraper." >&2
+  exit 1
+fi
+
 load_env
 load_accounts_from_db
 
@@ -379,7 +405,7 @@ while [[ "${i}" -le "${LOOPS}" ]]; do
 
   echo "[run.sh] Loop ${i} of ${LOOPS} — starting scrape.js …"
 
-  if node scrape.js >/dev/null 2>&1; then
+  if "${NODE_CMD}" scrape.js >/dev/null 2>&1; then
     mark_account_timestamp "${account_id}" "last_success_at"
     print_success_summary
     print_creator_results

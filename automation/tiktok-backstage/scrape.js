@@ -353,28 +353,72 @@ function extractMetricsFromText(bodyText) {
   };
 }
 
+async function clearPageState(page, context) {
+  await context.clearCookies().catch(() => {});
+
+  const cdp = await context.newCDPSession(page).catch(() => null);
+  if (cdp) {
+    await cdp.send("Network.enable").catch(() => {});
+    await cdp.send("Network.setCacheDisabled", { cacheDisabled: true }).catch(() => {});
+    await cdp.send("Network.clearBrowserCache").catch(() => {});
+    await cdp.send("Network.clearBrowserCookies").catch(() => {});
+  }
+
+  await page.evaluate(async () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {
+      // Ignore storage access issues.
+    }
+
+    try {
+      const databases = await indexedDB.databases();
+      for (const database of databases) {
+        if (database.name) {
+          indexedDB.deleteDatabase(database.name);
+        }
+      }
+    } catch {
+      // Ignore IndexedDB issues.
+    }
+
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
+    } catch {
+      // Ignore service worker issues.
+    }
+
+    try {
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }
+    } catch {
+      // Ignore Cache Storage issues.
+    }
+  }).catch(() => {});
+}
+
 async function dismissOverlays(page) {
-  const policyModal = page.locator('[data-id="policy-modal"]').first();
   const buttons = [
-    page.getByRole("button", { name: /accept/i }),
-    page.getByRole("button", { name: /agree/i }),
-    page.getByRole("button", { name: /allow all/i }),
-    page.getByRole("button", { name: /decline optional cookies/i }),
-    page.getByRole("button", { name: /got it/i }),
-    page.locator('.headerNoticeCloseButton-aRcCMY').first(),
-    page.locator('[data-id="header-notice-test-action"]').first(),
-    // Close any TikTok Backstage policy/info modals (e.g. Creator Network Management Policy).
-    policyModal.locator('button[aria-label="close"]').first(),
-    page.locator('button.semi-modal-close[aria-label="close"]').first(),
+    page.getByRole("button", { name: /accept/i }).first(),
+    page.getByRole("button", { name: /agree/i }).first(),
+    page.getByRole("button", { name: /allow all/i }).first(),
+    page.getByRole("button", { name: /decline/i }).first(),
+    page.getByRole("button", { name: /not now/i }).first(),
   ];
 
   for (const button of buttons) {
     try {
-      if (await button.isVisible({ timeout: 1500 })) {
-        await button.click({ timeout: 1500 });
+      if (await button.isVisible({ timeout: 1200 })) {
+        await button.click({ timeout: 2000 });
       }
     } catch {
-      // Overlay was not present or became detached.
+      // Overlay not present.
     }
   }
 
@@ -1452,6 +1496,10 @@ async function main() {
   }
 
   try {
+    currentStep = 'clear page state before login';
+    await clearPageState(page, context);
+    markStep('cleared page state before login');
+
     currentStep = 'open login page';
     await page.goto(LOGIN_URL, {
       waitUntil: "domcontentloaded",
@@ -1474,6 +1522,10 @@ async function main() {
     currentStep = 'wait for dashboard';
     await waitForDashboard(page);
     markStep('dashboard loaded');
+
+    currentStep = 'clear page state after login';
+    await clearPageState(page, context);
+    markStep('cleared page state after login');
 
     currentStep = 'switch to old workspace';
     const didSwitchWorkspace = await switchToOldWorkspace(page);
