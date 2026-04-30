@@ -507,6 +507,21 @@ async function switchToOldWorkspace(page) {
     if (!isVisible) {
       return false;
     }
+    const label = ((await switchBtn.innerText().catch(() => "")) || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    // In old workspace this toggle usually reads "Manager view".
+    // Only click when we are clearly in the new workspace.
+    if (label.includes("manager view")) {
+      return true;
+    }
+
+    if (!label.includes("old workspace")) {
+      return false;
+    }
+
     await switchBtn.click({ timeout: 5000 });
     await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUT_MS });
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
@@ -814,8 +829,46 @@ async function waitForInviteButtonEnabled(page, timeoutMs) {
 }
 
 async function waitForInviteButtonReady(page) {
-  const button = page.locator('button[data-id="add-host-btn"]').first();
-  await button.waitFor({ state: "visible", timeout: TIMEOUT_MS });
+  const inviteCandidates = [
+    page.locator('button[data-id="add-host-btn"]').first(),
+    page.locator('button[data-e2e-tag="overview_overview_managementRelationship_addHostBtn"]').first(),
+    page.getByRole("button", { name: /^invite$/i }).first(),
+    page.getByRole("button", { name: /invite creators/i }).first(),
+  ];
+
+  let button = null;
+  for (const candidate of inviteCandidates) {
+    try {
+      await candidate.waitFor({ state: "visible", timeout: 12000 });
+      button = candidate;
+      break;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  if (!button) {
+    // One last settle pass in case the workspace card mounts late.
+    await dismissOverlays(page);
+    await page.waitForTimeout(1000);
+    for (const candidate of inviteCandidates) {
+      try {
+        if (await candidate.isVisible({ timeout: 2000 })) {
+          button = candidate;
+          break;
+        }
+      } catch {
+        // Keep trying fallbacks.
+      }
+    }
+  }
+
+  if (!button) {
+    throw new Error(
+      "Invite button was not found in the current workspace layout."
+    );
+  }
+
   const creatorsCard = button.locator(
     'xpath=ancestor::div[contains(@class,"workbench-card")][1]'
   );

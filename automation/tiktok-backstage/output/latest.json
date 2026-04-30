@@ -3,238 +3,382 @@
   "url": "https://live-backstage.tiktok.com/portal/overview",
   "dashboardConfirmed": true,
   "coreMetricsVisible": true,
-  "lastUpdatedAt": "04/23/2026 22:50:11(UTC+00:00)",
+  "lastUpdatedAt": "04/30/2026 00:43:34(UTC+00:00)",
   "metrics": {
     "Diamonds": {
       "label": "Diamonds",
-      "current": "145.68K",
-      "yesterday": "100K",
-      "ratioPercent": "145.67%"
+      "current": "895",
+      "yesterday": "147.35K",
+      "ratioPercent": "0.6%"
     },
     "Go LIVE rate": {
       "label": "Go LIVE rate",
-      "current": "34.17%",
-      "yesterday": "32.91%",
-      "ratioPercent": "103.83%"
+      "current": "0.61%",
+      "yesterday": "31.98%",
+      "ratioPercent": "1.92%"
     },
     "Active creators": {
       "label": "Active creators",
-      "current": "108",
-      "yesterday": "105",
-      "ratioPercent": "102.85%"
+      "current": "2",
+      "yesterday": "103",
+      "ratioPercent": "1.94%"
     },
     "New creators": {
       "label": "New creators",
-      "current": "4",
-      "yesterday": "3",
-      "ratioPercent": "133.33%"
+      "current": "0",
+      "yesterday": "2",
+      "ratioPercent": "0%"
     },
     "Valid go LIVE rate": {
       "label": "Valid go LIVE rate",
-      "current": "28.48%",
-      "yesterday": "26.95%",
-      "ratioPercent": "105.64%"
+      "current": "0%",
+      "yesterday": "24.84%",
+      "ratioPercent": "0%"
     },
     "Valid active creators": {
       "label": "Valid active creators",
-      "current": "90",
-      "yesterday": "86",
-      "ratioPercent": "104.65%"
+      "current": "0",
+      "yesterday": "80",
+      "ratioPercent": "0%"
     }
   },
+  "businessNoticeClicks": 0,
   "creatorLookup": {
     "searchedUsernames": [
-      "kiwilover230",
-      "a4.lx_9r6",
-      "axylum_events",
-      "matthewbudd2",
-      "serenityjaneasmr",
-      "ayindodalouba",
-      "crash.bandicoot_padz",
-      "lolodagoldenfish1",
-      "dmg.chinezu",
-      "kaleffcol",
-      "adrian.5441",
-      "theunexplaineduk",
-      "carlymarie4",
-      ".dopevr",
-      "kofi36030",
-      "nawidsamadi_07",
-      "theallieway"
+      "sultanessam1",
+      "robinandbarrow",
+      "s4ki99",
+      "suavaytay",
+      "pastorsahr1",
+      "rlc_mbl_romania",
+      "owxnfn",
+      "real.rudz27",
+      "beaniosa",
+      "m.reda.online",
+      "dalia.dx",
+      "fiftycal44",
+      "user34541085990811",
+      "thepeacegives50",
+      "malmorenaa",
+      "scotty.richo.arts",
+      "claresjellies",
+      ".boljesus19",
+      "klds__",
+      "eatwikky",
+      "unknown365ss",
+      "nova_dsot",
+      "tomjoneswales",
+      "itskirkby",
+      "gamingaihwayne",
+      "lorena.nita20",
+      "reggie8120349265573",
+      "avastarz13",
+      "www.tiktok.com120484",
+      "fawnmimz"
     ],
-    "apiResponseUrl": "https://live-backstage.tiktok.com/creators/live/union_platform_api/agency/union_invite/batch_check_anchor/?msToken=3PL4xVQ4I2b6J80VQ-GRRXP9AR-cE0hLGZVkUTefH2m6Z6s9als-4Jwyw-M3Bqw0ppjcM1nI8KCJPvdIV9KKAFotMp79sN-ANwgIGNNmQ0hTi4I7UE_Fwm1aBPYa9PAN6cWuosiWWmfr&X-Bogus=DFSzswVLKBLJXM1BCbGoI9DZrfKi&X-Gnarly=M5mIAKz/nfy0hZN21a7j1hFIhulGTNFnUddAvLL/NBkGloh3dLWcP8BcUvS3tRDdnmwXStQ75QO/GmyJZ747vI7txbdAyWen4kBi6qfrPNOV/szpgzZ3pnCJavmLrjt/dRZGVv94/U-T2SmHJreQTFS3ZaFvWFNXE/LG2fpNQE8a9FYLSLOGpYGUReAtBU/4kZ/F0Q7Y3H6zxQ3Ht--VCjlLujgG3RPzMOvTu360zX3O8xkWXhL/bNVRpTGGgecl2PpCGo99UgbwPoNT2QdhIozlUVtK/dDAGSbL/yuLWiEo",
+    "apiResponseUrl": "https://live-backstage.tiktok.com/creators/live/union_platform_api/agency/union_invite/batch_check_anchor/?msToken=K5iVolnEjOBxmGsMwcAA14k917KippLMqIIGnBV1T0Apxic4da4Ug18RjJ18KvBvLZ7uo4R8AHurcE4T_ansWFkcW7j9nDPhnJJQk_RYO2r9lyNoyMxU3e3oWlDUKCFB_WlNqCB5rLmk&X-Bogus=DFSzswVLEsMeml1BCL2iFoDZrfsn&X-Gnarly=MKgvLB50BqiZgqLJyIzH/C29o3O979mauCtcuhx4JTBXWveG5HQgwoBox651fnqtSGn3SG3CW6h2gGkofP6UHLmklGVG429IPshiQsdoeBtZugMhicy7MQraRN6L2G19CJH4zRVzGM6VglH0Y47cZs8JugGTRkIU3s6iSrGdDLFBe7CEVVgCpCX-X2maloRMMsOAs42lx1m73138X1YRfpNwA5VAD/KiujlShGfkmPsNSCuh/fPXFSB-kEBwBPossf/L8wPLLXGCdZS6Wu1s2oRs4NogI8MAFsUQcT07MbXG",
     "results": [
       {
-        "username": "kiwilover230",
-        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/8f7ab1642e3deee4b98bbba1470f8280~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=f993e927&x-expires=1777154400&x-signature=wPsGT%2B28H2CAKNabHWf16t2kFw4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "༄ ✧𝓜༄ ✧",
-        "status": "Ineligible",
-        "statusReason": "Other reason",
+        "username": "sultanessam1",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/898b5e653a3249c96dac05c0c3d05f80~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=e885702b&x-expires=1777680000&x-signature=EUpdAZ0gAe5U78vnbGkscza7qiQ%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "SULTAN 👽",
+        "status": "Unsupported region",
+        "statusReason": null,
         "invitationTypeCode": null,
         "invitationType": "-",
-        "id": 564
+        "id": 7975
       },
       {
-        "username": "a4.lx_9r6",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/8db6cecaaebe01f96cbb66a02b90dda0~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=0282e8de&x-expires=1777154400&x-signature=SvfRa9waVrKAY4401VDIPsf5RrI%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "pistachioicelate",
-        "status": "Ineligible",
-        "statusReason": "Other reason",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 565
-      },
-      {
-        "username": "axylum_events",
-        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/b86ea4510c78aec325eeb5b326f41143~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=2b6ab885&x-expires=1777154400&x-signature=lsaLX20%2BCdFAFoGY1MKw6tBCvZY%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Tosan Lori",
-        "status": "Ineligible",
-        "statusReason": "In another Creator Network",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 566
-      },
-      {
-        "username": "matthewbudd2",
-        "profilePhotoUrl": "https://p19-common-sign-useastred.tiktokcdn-eu.com/tos-useast2a-avt-0068-euttp/3c0e4039f7d5952e322dd554d8664c1c~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=9f353621&x-expires=1777154400&x-signature=PUM06mKW%2FoTWR6%2FsSWm2q8g0%2FEY%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Matthew Budd",
-        "status": "Ineligible",
-        "statusReason": "In another Creator Network",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 567
-      },
-      {
-        "username": "serenityjaneasmr",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/e5d9507dea13dbdccd5e93fc48f448e8~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=f3ac9845&x-expires=1777154400&x-signature=T%2BiYTpKIpsSOf3KDDSUhqv%2FR56o%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Serenity Jane ASMR ✨",
-        "status": "Ineligible",
-        "statusReason": "In another Creator Network",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 568
-      },
-      {
-        "username": "ayindodalouba",
-        "profilePhotoUrl": "https://p19-common-sign.tiktokcdn.com/tos-maliva-avt-0068/a5c134d3341b439740a1a32b66cc783b~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=354b5a70&x-expires=1777154400&x-signature=NWywiwBTj%2FLSCubL1r6SoEvHTEM%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Ayindo Dalouba",
-        "status": "Ineligible",
-        "statusReason": "Other reason",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 569
-      },
-      {
-        "username": "crash.bandicoot_padz",
-        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/83a863dea529ce9a83293b162c944986~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=7a9f82af&x-expires=1777154400&x-signature=3dfnI6y%2Fy79pWrboJQP5v3o1gXY%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Crash bandicoot-Padz",
-        "status": "Ineligible",
-        "statusReason": "In another Creator Network",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 570
-      },
-      {
-        "username": "lolodagoldenfish1",
-        "profilePhotoUrl": "https://p19-common-sign-useastred.tiktokcdn-eu.com/tos-useast2a-avt-0068-euttp/29f7ee91345eff30300c11033f6eb198~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=0056a32b&x-expires=1777154400&x-signature=KI6ggs0jsIBgfNQAFkhyjXpZGzw%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Lolo1",
+        "username": "robinandbarrow",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-useast2a-avt-0068-euttp/4a9cc5753a873aa9b1e1714c83822b2b~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=6e0a3052&x-expires=1777680000&x-signature=1Q41uNaJBBOLTeF2sbXTej7uDQc%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "RobinAndBarrow",
         "status": "Available",
         "statusReason": null,
         "invitationTypeCode": 1,
         "invitationType": "Regular",
-        "id": 571
+        "id": 7974
       },
       {
-        "username": "dmg.chinezu",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/380dcb091b2830b2ee01d611d574ab54~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=ead27e8f&x-expires=1777154400&x-signature=b2rcrLR3Sh%2FOvy2qPAjupx6uyBw%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "DMG.CHINEZU",
+        "username": "s4ki99",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/67a90e466502822f7bbd326475c5fba4~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=f2e79c74&x-expires=1777680000&x-signature=%2BvKLqJgm3pUDzfFeGzcYlR42MXc%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Saki",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 2,
+        "invitationType": "Premium",
+        "id": 7973
+      },
+      {
+        "username": "suavaytay",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/62c1959957b8cb5afd10014ffc0fce3e~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=45ccc6e1&x-expires=1777680000&x-signature=99stdITJqYa098rTzm2Jh%2FgwxsQ%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "TT",
         "status": "Ineligible",
         "statusReason": "Other reason",
         "invitationTypeCode": null,
         "invitationType": "-",
-        "id": 572
+        "id": 7972
       },
       {
-        "username": "kaleffcol",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/b50fb08948b41424d40787b03913d4ba~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=52e282fd&x-expires=1777154400&x-signature=AcedRed5GnSiWItlwt9evLww610%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Kaleff",
+        "username": "pastorsahr1",
+        "profilePhotoUrl": "https://p77-sign-sg.tiktokcdn.com/tos-alisg-avt-0068/3617254ece8fc6293abb9bb45b071292~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=0242fca7&x-expires=1777680000&x-signature=%2FB8uYTsh6CcirtO4bfHAsnr41Hs%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "APOSTLE SAHR J.Q MANSARAY.",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7971
+      },
+      {
+        "username": "rlc_mbl_romania",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/fec3220853e5c071c40ef60ad226a458~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=18c2de8f&x-expires=1777680000&x-signature=nAB3WnYQUig%2BeFJM1h9ETZE4TRQ%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "rlc_romania",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7970
+      },
+      {
+        "username": "owxnfn",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/5cef09cbdc2f352207cbe62b65dd7e4b~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=de16866f&x-expires=1777680000&x-signature=0GlaY1zYnszYZVJjaYu9CsAsSR0%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "owxn🪁",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7969
+      },
+      {
+        "username": "real.rudz27",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/5d69a2c4230efeaecf7ded09ebe11018~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=5c148e68&x-expires=1777680000&x-signature=ATFUMNYuamrMuQlR0o8ibLYBsfE%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "real.rudz27",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7968
+      },
+      {
+        "username": "beaniosa",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/072eb13b867313c639b82557e7e5ea1f~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=8856b6fd&x-expires=1777680000&x-signature=NFtWoLnITkaxPoZ%2FP%2B93tJdqnK4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Bean🫘",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7967
+      },
+      {
+        "username": "m.reda.online",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/3def608e07020c652525c36decb2f271~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=2808bee2&x-expires=1777680000&x-signature=P%2B6vmqccDCsRBlXF43BQONIU68c%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Mohamed Reda",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7966
+      },
+      {
+        "username": "dalia.dx",
+        "profilePhotoUrl": "https://p19-common-sign.tiktokcdn.com/tos-maliva-avt-0068/c369019497bb9897cfc3ce00ddcd0858~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=e3de654c&x-expires=1777680000&x-signature=0iDuFk9b%2FxugnZPmVqi4NVIrZOQ%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "dalia.dx",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7965
+      },
+      {
+        "username": "fiftycal44",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/a9db888bb2cdcac88df5e721ea6397f7~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=c5c49c5f&x-expires=1777680000&x-signature=bhrZ4MtL5Nx8py68Sn37WYoxAv0%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "FIFTYCAL44",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7964
+      },
+      {
+        "username": "user34541085990811",
+        "profilePhotoUrl": "https://p19-common-sign.tiktokcdn.com/musically-maliva-obj/1594805258216454~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=b366119d&x-expires=1777680000&x-signature=AF42nSWn6ccBeEVMQWjJ%2FuQmAPs%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "user34541085990811",
         "status": "Ineligible",
         "statusReason": "Other reason",
         "invitationTypeCode": null,
         "invitationType": "-",
-        "id": 573
+        "id": 7963
       },
       {
-        "username": "adrian.5441",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-useast2a-avt-0068-euttp/12303ffcaaf9a4aaa1aa3debf33bdc22~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=9c15a35e&x-expires=1777154400&x-signature=QuBOw%2BeJBGd4CYFdj8EZdX%2BzFAo%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Adrian",
+        "username": "thepeacegives50",
+        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/8866fcd4955a416bca2f69b285d5eadb~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=0e3753a7&x-expires=1777680000&x-signature=3PemsQdg%2FUrWfRMXPR4gDfvMuho%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Legacy Crew",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7962
+      },
+      {
+        "username": "malmorenaa",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/b58ac1759d7ff38336751aadaa714bae~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=a88558f2&x-expires=1777680000&x-signature=2ONHJu9qDy9%2B0D3o9EmZKdRcgaU%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Mal Morena",
         "status": "Available",
         "statusReason": null,
         "invitationTypeCode": 1,
         "invitationType": "Regular",
-        "id": 574
+        "id": 7961
       },
       {
-        "username": "theunexplaineduk",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/93fda524740df4ded55e4b12f0a2eaba~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=ba5197d7&x-expires=1777154400&x-signature=LoGRjayV3OZYgrMGWVPGSBShKPY%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "THE UNEXPLAINED UK",
+        "username": "scotty.richo.arts",
+        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/b2875ea70554583bf321ee12ee34333c~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=4ee0f698&x-expires=1777680000&x-signature=mb92Dt5NDFj2pir%2F1u522RD99bY%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Scotty.Richo Arts",
         "status": "Ineligible",
         "statusReason": "In another Creator Network",
         "invitationTypeCode": null,
         "invitationType": "-",
-        "id": 575
+        "id": 7960
       },
       {
-        "username": "carlymarie4",
-        "profilePhotoUrl": "https://p19-common-sign.tiktokcdn.com/tos-maliva-avt-0068/7f3fe1cc7adb310541399aa4dc36999b~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=d886aa03&x-expires=1777154400&x-signature=kU8XPt5k%2FkS1CwJAZi9IinJN9ig%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "Carly Marie 🍒 👑",
-        "status": "Ineligible",
-        "statusReason": "In another Creator Network",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 576
-      },
-      {
-        "username": ".dopevr",
-        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/35c3b4f9dddc14028055db750335c501~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=06e8b49f&x-expires=1777154400&x-signature=sJF%2B5R7ApYBLjuq9Fk0KO8TyFPk%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "𝘿𝙊𝙋𝙀𝙑𝙍",
-        "status": "Ineligible",
-        "statusReason": "In another Creator Network",
-        "invitationTypeCode": null,
-        "invitationType": "-",
-        "id": 577
-      },
-      {
-        "username": "kofi36030",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-useast2a-avt-0068-euttp/f030d7a469dc051b2623b5cf9b26d182~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=7f952614&x-expires=1777154400&x-signature=VDiBzOXF238qHdBpH4VjPeQ2GGI%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "#kofi#",
+        "username": "claresjellies",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/4f1abb99574982baeb2c5c7724cb687f~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=2cf32369&x-expires=1777680000&x-signature=9h7G0x99FN6chn6jNO9Q6HF9%2BJM%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "CCComps",
         "status": "Available",
         "statusReason": null,
         "invitationTypeCode": 1,
         "invitationType": "Regular",
-        "id": 578
+        "id": 7959
       },
       {
-        "username": "nawidsamadi_07",
-        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/bf7fc09b9744a5a402d10ce2b332e409~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=c6618b18&x-expires=1777154400&x-signature=VYqaxaziXft6WlAwjP%2FguhZ7AsQ%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "🔥Jan Nawid🔥",
+        "username": ".boljesus19",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/57be91427b84d3c1138c4e74349a27f0~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=c1af86b4&x-expires=1777680000&x-signature=U1BBDbr5u1erLP8BfdHHXSzs2g4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Boljesus19💙",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 2,
+        "invitationType": "Premium",
+        "id": 7958
+      },
+      {
+        "username": "klds__",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/f1b5664286d99572da3d17e45f1e9991~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=b31c3b5f&x-expires=1777680000&x-signature=lsyc20q1MmRyHCDkI7JQUhBvn80%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "ꓘH∀⅂Ǝᗡ",
+        "status": "Unsupported region",
+        "statusReason": null,
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7957
+      },
+      {
+        "username": "eatwikky",
+        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/5b874b8da1411dc42621b6b8367a06e7~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=cb5412f0&x-expires=1777680000&x-signature=vnHwSHR%2B0mg%2F2aMldgh6PkM9vnQ%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "eatwikky",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7956
+      },
+      {
+        "username": "unknown365ss",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/7f7dd74c3bdefaeec1fbaa67662c4232~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=a89742aa&x-expires=1777680000&x-signature=Ygebjk%2FyJlSgxIHV6BHZ7hLvjxg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "User365",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7955
+      },
+      {
+        "username": "nova_dsot",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/79a4c45705905cecbd6130a6ede89210~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=1ca3f674&x-expires=1777680000&x-signature=7q6C%2BEsW7fP2DsqF6%2BT1a%2F7Gt8o%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "NO̷VA [DSO̷T OFFICIAL]",
         "status": "Ineligible",
         "statusReason": "Other reason",
         "invitationTypeCode": null,
         "invitationType": "-",
-        "id": 579
+        "id": 7954
       },
       {
-        "username": "theallieway",
-        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/02f8286ff2abaf6a71581cc9ea48916f~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=d5fc04cc&x-expires=1777154400&x-signature=11k7Di0Qik7BKcE9V01pDkiMgRE%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
-        "displayName": "The Allie Way",
+        "username": "tomjoneswales",
+        "profilePhotoUrl": "https://p19-common-sign-useastred.tiktokcdn-eu.com/tos-useast2a-avt-0068-giso/f68f1556c68e56942da6d20c45be0b21~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=da2a9de6&x-expires=1777680000&x-signature=3FRRmh1TfKbmKfgknvY8L5Lurx4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Tom Jones Wales 🐉",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7953
+      },
+      {
+        "username": "itskirkby",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/918071a7e51e5417b83d4cffdad7e900~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=f438ee4e&x-expires=1777680000&x-signature=kAJuF7cJJfkOEJv9qaPwDsnPjv4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Christopher Kirkby",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7952
+      },
+      {
+        "username": "gamingaihwayne",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/4985d1bb8b3f305ef8716ecc3271c0ed~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=2fb498d3&x-expires=1777680000&x-signature=mJzFOuZPJ4UNy0dzWe0JPqySNh8%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "WAYNEFOO",
+        "status": "Unsupported region",
+        "statusReason": null,
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7951
+      },
+      {
+        "username": "lorena.nita20",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-maliva-avt-0068/fcfbcc712ada076a9bb1cd25fb64646e~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=a240a829&x-expires=1777680000&x-signature=JhbePJl3Nfd8IHc4hFI227MGnUs%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "lorena.nita20",
+        "status": "Ineligible",
+        "statusReason": "In another Creator Network",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7950
+      },
+      {
+        "username": "reggie8120349265573",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/b60ae9febd1a691fb6ca52d1e67df811~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=a0757aee&x-expires=1777680000&x-signature=Edoi6GZYrmfqMbOgEwyn2xuCUFo%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "REGINALD🦅 ERIC 🦅👁️💧👁️",
         "status": "Available",
         "statusReason": null,
         "invitationTypeCode": 1,
         "invitationType": "Regular",
-        "id": 580
+        "id": 7949
+      },
+      {
+        "username": "avastarz13",
+        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/34d6d764a3b26d14d0d7c975864373bb~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=3b5ace92&x-expires=1777680000&x-signature=F3fngexnsVTHilCBRjhFoeCQcMI%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "Ava",
+        "status": "Available",
+        "statusReason": null,
+        "invitationTypeCode": 1,
+        "invitationType": "Regular",
+        "id": 7948
+      },
+      {
+        "username": "www.tiktok.com120484",
+        "profilePhotoUrl": "https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/9fe546fdcc2428e417125313e7c89927~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=1b1f9182&x-expires=1777680000&x-signature=fYKtmSAQmG6JHKbJK%2BtW3K0fkeI%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "القعقاع",
+        "status": "Unsupported region",
+        "statusReason": null,
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7947
+      },
+      {
+        "username": "fawnmimz",
+        "profilePhotoUrl": "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/a9d6bba79a190b5d4ec64f2f19936c68~tplv-tiktokx-cropcenter:100:100.webp?dr=14579&refresh_token=3b275186&x-expires=1777680000&x-signature=4o2d%2BTiMggb2Eg12VksoRDnAD%2Fo%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=d2876c74&idc=my",
+        "displayName": "ᨳິ ׂ 𓈒 ℳ𝒾ℳ𝒾 ྀ ͚",
+        "status": "Ineligible",
+        "statusReason": "Other reason",
+        "invitationTypeCode": null,
+        "invitationType": "-",
+        "id": 7946
       }
     ]
   },
-  "scrapedAt": "2026-04-23T22:50:37.069Z"
+  "scrapedAt": "2026-04-30T00:44:11.141Z"
 }
