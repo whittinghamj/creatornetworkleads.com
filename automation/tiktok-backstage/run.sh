@@ -363,20 +363,18 @@ cd "${ROOT_DIR}"
 
 consecutive_failures=0
 i=1
-last_account_index=-1
 
 echo "[run.sh] Loaded ${#ACCOUNT_EMAILS[@]} login account(s) from DB table '${ACCOUNTS_TABLE}'."
 
+# Pick one account for this invocation and reuse it across all loops.
+account_index="$(pick_random_index "-1")"
+account_id="${ACCOUNT_IDS[account_index]}"
+export TT_BACKSTAGE_EMAIL="${ACCOUNT_EMAILS[account_index]}"
+export TT_BACKSTAGE_PASSWORD="${ACCOUNT_PASSWORDS[account_index]}"
+
+echo "[run.sh] Using backstage account for this run: ${TT_BACKSTAGE_EMAIL}"
+
 while [[ "${i}" -le "${LOOPS}" ]]; do
-  account_index="$(pick_random_index "${last_account_index}")"
-  last_account_index="${account_index}"
-
-  account_id="${ACCOUNT_IDS[account_index]}"
-  export TT_BACKSTAGE_EMAIL="${ACCOUNT_EMAILS[account_index]}"
-  export TT_BACKSTAGE_PASSWORD="${ACCOUNT_PASSWORDS[account_index]}"
-
-  echo "[run.sh] Using backstage account: ${TT_BACKSTAGE_EMAIL}"
-
   mark_account_timestamp "${account_id}" "last_used_at"
 
   echo "[run.sh] Loop ${i} of ${LOOPS} — starting scrape.js …"
