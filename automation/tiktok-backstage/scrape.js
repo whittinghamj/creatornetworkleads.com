@@ -676,6 +676,8 @@ async function collectFailureDiagnostics(page) {
       disabled: null,
       ariaDisabled: null,
       text: null,
+      disableReason: null,
+      wrapperCursor: null,
     },
   };
 
@@ -740,17 +742,27 @@ async function collectFailureDiagnostics(page) {
           disabled: null,
           ariaDisabled: null,
           text: null,
+          disableReason: null,
+          wrapperCursor: null,
         };
       }
 
       const style = window.getComputedStyle(element);
       const rect = element.getBoundingClientRect();
+      const wrapper = element.parentElement;
+      const describedBy = wrapper?.getAttribute('aria-describedby') || element.getAttribute('aria-describedby');
+      const describedNode = describedBy ? document.getElementById(describedBy) : null;
+      const disableReason = describedNode
+        ? (describedNode.textContent || '').replace(/\s+/g, ' ').trim() || null
+        : null;
       return {
         exists: true,
         visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0,
         disabled: element.hasAttribute('disabled'),
         ariaDisabled: element.getAttribute('aria-disabled'),
         text: (element.textContent || '').replace(/\s+/g, ' ').trim() || null,
+        disableReason,
+        wrapperCursor: wrapper instanceof HTMLElement ? window.getComputedStyle(wrapper).cursor : null,
       };
     })
     .catch(() => diagnostics.inviteButton);
@@ -786,6 +798,7 @@ async function forceUnblockInviteUi(page) {
 
 async function waitForInviteButtonEnabled(page, timeoutMs) {
   const start = Date.now();
+  let didReloadOverview = false;
 
   while (Date.now() - start < timeoutMs) {
     const state = await page
@@ -818,10 +831,20 @@ async function waitForInviteButtonEnabled(page, timeoutMs) {
     }
 
     await dismissOverlays(page);
+    await resolveBusinessEssentialsNotice(page).catch(() => 0);
     await forceUnblockInviteUi(page);
 
     // Some runs require one extra keypress to close stuck policy overlays.
     await page.keyboard.press('Escape').catch(() => {});
+
+    // If the Invite button remains disabled for a while, force a clean overview reload once.
+    if (!didReloadOverview && state.exists && !state.enabled && Date.now() - start > 15000) {
+      didReloadOverview = true;
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await dismissOverlays(page);
+    }
+
     await page.waitForTimeout(750);
   }
 
