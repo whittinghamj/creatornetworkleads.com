@@ -500,6 +500,24 @@ async function submitLogin(page) {
   await page.keyboard.press("Enter");
 }
 
+async function switchToOldWorkspace(page) {
+  const switchBtn = page.locator('button[data-id="workplace-switch-button"]').first();
+  try {
+    const isVisible = await switchBtn.isVisible({ timeout: 5000 });
+    if (!isVisible) {
+      return false;
+    }
+    await switchBtn.click({ timeout: 5000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUT_MS });
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(2000);
+    await dismissOverlays(page);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function waitForDashboard(page) {
   await page.waitForLoadState("domcontentloaded");
 
@@ -1381,9 +1399,15 @@ async function main() {
     await waitForDashboard(page);
     markStep('dashboard loaded');
 
-    currentStep = 'resolve business essentials notice';
-    businessNoticeClicks = await resolveBusinessEssentialsNotice(page);
-    markStep(`resolved business essentials notice (${businessNoticeClicks} click${businessNoticeClicks === 1 ? '' : 's'})`);
+    currentStep = 'switch to old workspace';
+    const didSwitchWorkspace = await switchToOldWorkspace(page);
+    markStep(didSwitchWorkspace ? 'switched to old workspace' : 'old workspace button not present, continuing');
+
+    if (!didSwitchWorkspace) {
+      currentStep = 'resolve business essentials notice';
+      businessNoticeClicks = await resolveBusinessEssentialsNotice(page);
+      markStep(`resolved business essentials notice (${businessNoticeClicks} click${businessNoticeClicks === 1 ? '' : 's'})`);
+    }
 
     // Dismiss any modals that appear after login lands on the dashboard
     // (e.g. the "Creator Network Management Policy" overlay).
@@ -1397,8 +1421,9 @@ async function main() {
     const bodyText = await page.locator("body").innerText();
     const extracted = extractMetricsFromText(bodyText);
 
+    const onBackstageDomain = currentUrl.includes('live-backstage.tiktok.com');
     if (
-      !currentUrl.startsWith(SUCCESS_URL) ||
+      !onBackstageDomain ||
       !extracted.coreMetricsVisible ||
       !extracted.lastUpdatedAt
     ) {
