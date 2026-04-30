@@ -76,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    header('Location: /admin/backstage-accounts.php');
+    $redirectTarget = (string)($_SERVER['REQUEST_URI'] ?? '/admin/backstage-accounts.php');
+    header('Location: ' . $redirectTarget);
     exit;
 }
 
@@ -149,8 +150,8 @@ require __DIR__ . '/includes/header.php';
                                   data-account-id="<?= (int)$account['id'] ?>">
                                 <?= (int)$account['is_active'] === 1 ? 'Active' : 'Inactive' ?>
                             </span>
-                            <form method="POST"
-                                  action="/admin/backstage-accounts.php"
+                                <form method="POST"
+                                    action=""
                                   class="d-inline js-backstage-toggle-form"
                                   data-account-id="<?= (int)$account['id'] ?>">
                                 <?= csrfField() ?>
@@ -224,7 +225,8 @@ document.addEventListener('DOMContentLoaded', function () {
             button.textContent = 'Saving...';
 
             try {
-                const response = await fetch(form.action, {
+                const postUrl = form.getAttribute('action') || window.location.pathname + window.location.search;
+                const response = await fetch(postUrl, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
