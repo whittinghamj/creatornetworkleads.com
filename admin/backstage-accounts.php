@@ -10,7 +10,11 @@ $db = getDB();
 ensureBackstageAccountsSchema($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $isAjax = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+    $isAjax = (
+        strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest'
+        || postStr('ajax') === '1'
+        || stripos((string)($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false
+    );
     $token = (string)($_POST['csrf_token'] ?? '');
     $csrfOk = isset($_SESSION['csrf_token']) && hash_equals((string)$_SESSION['csrf_token'], $token);
 
@@ -150,6 +154,7 @@ require __DIR__ . '/includes/header.php';
                                   class="d-inline js-backstage-toggle-form"
                                   data-account-id="<?= (int)$account['id'] ?>">
                                 <?= csrfField() ?>
+                                                                <input type="hidden" name="ajax" value="1">
                                 <input type="hidden" name="action" value="toggle_active">
                                 <input type="hidden" name="account_id" value="<?= (int)$account['id'] ?>">
                                 <button type="submit"
@@ -239,7 +244,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (!response.ok || !payload || payload.ok !== true) {
-                    throw new Error((payload && payload.message) ? payload.message : 'Status update failed.');
+                    let fallbackMessage = 'Status update failed.';
+                    if (responseText && !payload) {
+                        const cleaned = responseText
+                            .replace(/<[^>]*>/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        if (cleaned) {
+                            fallbackMessage = cleaned.slice(0, 180);
+                        }
+                    }
+
+                    throw new Error((payload && payload.message) ? payload.message : fallbackMessage);
                 }
 
                 const isActive = Number(payload.is_active) === 1;
