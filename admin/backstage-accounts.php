@@ -10,9 +10,26 @@ $db = getDB();
 ensureBackstageAccountsSchema($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verifyCsrf();
-
     $isAjax = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+    $token = (string)($_POST['csrf_token'] ?? '');
+    $csrfOk = isset($_SESSION['csrf_token']) && hash_equals((string)$_SESSION['csrf_token'], $token);
+
+    if (!$csrfOk) {
+        if ($isAjax) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Invalid security token. Refresh the page and try again.',
+                'account_id' => null,
+                'is_active' => null,
+            ]);
+            exit;
+        }
+
+        verifyCsrf();
+    }
+
     $action = postStr('action');
     $accountId = (int)postStr('account_id');
     $response = [
@@ -206,12 +223,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
                     },
                     body: new FormData(form),
                     credentials: 'same-origin',
                 });
 
-                const payload = await response.json();
+                const responseText = await response.text();
+                let payload = null;
+
+                try {
+                    payload = JSON.parse(responseText);
+                } catch {
+                    payload = null;
+                }
+
                 if (!response.ok || !payload || payload.ok !== true) {
                     throw new Error((payload && payload.message) ? payload.message : 'Status update failed.');
                 }
