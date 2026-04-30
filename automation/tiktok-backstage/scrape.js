@@ -847,7 +847,7 @@ async function waitForInviteButtonReady(page) {
 async function inviteUiAppeared(page) {
   const modalTitle = page
     .locator('.semi-sidesheet-inner-wrap:visible .semi-sidesheet-title h5')
-    .filter({ hasText: /Invite creators/i })
+    .filter({ hasText: /Invite/i })
     .first();
 
   if (await modalTitle.count()) {
@@ -936,7 +936,7 @@ async function waitForInviteModal(page) {
 
   await modal
     .locator(".semi-sidesheet-title h5")
-    .filter({ hasText: /Invite creators/i })
+    .filter({ hasText: /Invite/i })
     .first()
     .waitFor({ state: "visible", timeout: TIMEOUT_MS });
   await saveDebugSnapshot(page, "invite-modal-open", modal);
@@ -1422,11 +1422,10 @@ async function main() {
     const extracted = extractMetricsFromText(bodyText);
 
     const onBackstageDomain = currentUrl.includes('live-backstage.tiktok.com');
-    if (
-      !onBackstageDomain ||
-      !extracted.coreMetricsVisible ||
-      !extracted.lastUpdatedAt
-    ) {
+    // When we switched to the old workspace the dashboard content differs,
+    // so only enforce the metrics check when we stayed on the new workspace.
+    const dashboardMetricsOk = didSwitchWorkspace || (extracted.coreMetricsVisible && extracted.lastUpdatedAt);
+    if (!onBackstageDomain || !dashboardMetricsOk) {
       throw new Error(
         `Login did not reach the expected dashboard state. URL: ${currentUrl}`
       );
